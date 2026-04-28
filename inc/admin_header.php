@@ -85,7 +85,16 @@ body.sb-open .hamburger .bars::after  { top: 7px; transform: rotate(-45deg); }
 /* ---------- Layout ---------- */
 .layout {
   padding-top: var(--top-h);
-  display: grid; grid-template-columns: var(--side-w) 1fr; min-height: 100vh;
+  min-height: 100vh;
+}
+main.main {
+  margin-left: var(--side-w);
+  padding: 22px 26px 80px;
+  min-height: calc(100vh - var(--top-h));
+  min-width: 0;
+}
+@media (max-width: 900px) {
+  main.main { margin-left: 0; padding: 18px 16px 80px; }
 }
 
 /* ---------- Sidebar ---------- */
@@ -139,7 +148,6 @@ aside.sidebar .footer a:hover { color:#fff; background:none; }
 }
 
 /* ---------- Main ---------- */
-main.main { padding: 22px 26px 80px; min-width: 0; }
 main.main .pageHead { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap: 12px; margin-bottom: 16px; }
 main.main h1.page-title { margin: 0; font-size: 22px; }
 main.main .crumb { color:#6b7280; font-size: 12px; }

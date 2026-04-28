@@ -2,20 +2,31 @@
 require_once __DIR__ . '/_bootstrap.php';
 require_once __DIR__ . '/../inc/db.php';
 
+// Safe count helper — returns 0 if table or column is missing on the
+// current DB (e.g. running on an older install before re-running install.php).
+$safe_count = function (string $sql): int {
+    try {
+        $r = db_one($sql);
+        return (int) ($r['c'] ?? 0);
+    } catch (Throwable $e) {
+        return 0;
+    }
+};
+
 // ===== Headline KPIs =====
 $kpi = [
-    'companies_total'      => (int) (db_one('SELECT COUNT(*) c FROM companies')['c'] ?? 0),
-    'companies_active'     => (int) (db_one('SELECT COUNT(*) c FROM companies WHERE status = "active"')['c'] ?? 0),
-    'companies_suspended'  => (int) (db_one('SELECT COUNT(*) c FROM companies WHERE status = "suspended"')['c'] ?? 0),
-    'products_total'       => (int) (db_one('SELECT COUNT(*) c FROM products')['c'] ?? 0),
-    'products_featured'    => (int) (db_one('SELECT COUNT(*) c FROM products WHERE is_featured = 1')['c'] ?? 0),
-    'members_total'        => (int) (db_one('SELECT COUNT(*) c FROM members')['c'] ?? 0),
-    'members_30d'          => (int) (db_one('SELECT COUNT(*) c FROM members WHERE created_at >= NOW() - INTERVAL 30 DAY')['c'] ?? 0),
-    'leads_total'          => (int) (db_one('SELECT COUNT(*) c FROM leads')['c'] ?? 0),
-    'leads_30d'            => (int) (db_one('SELECT COUNT(*) c FROM leads WHERE created_at >= NOW() - INTERVAL 30 DAY')['c'] ?? 0),
-    'voucher_claims_total' => (int) (db_one('SELECT COUNT(*) c FROM voucher_claims')['c'] ?? 0),
-    'qr_scans_total'       => (int) (db_one('SELECT COUNT(*) c FROM campaign_scans')['c'] ?? 0),
-    'page_views_30d'       => (int) (db_one('SELECT COUNT(*) c FROM analytics_events WHERE event_type = "page_view" AND created_at >= NOW() - INTERVAL 30 DAY')['c'] ?? 0),
+    'companies_total'      => $safe_count('SELECT COUNT(*) c FROM companies'),
+    'companies_active'     => $safe_count('SELECT COUNT(*) c FROM companies WHERE status = "active"'),
+    'companies_suspended'  => $safe_count('SELECT COUNT(*) c FROM companies WHERE status = "suspended"'),
+    'products_total'       => $safe_count('SELECT COUNT(*) c FROM products'),
+    'products_featured'    => $safe_count('SELECT COUNT(*) c FROM products WHERE is_featured = 1'),
+    'members_total'        => $safe_count('SELECT COUNT(*) c FROM members'),
+    'members_30d'          => $safe_count('SELECT COUNT(*) c FROM members WHERE created_at >= NOW() - INTERVAL 30 DAY'),
+    'leads_total'          => $safe_count('SELECT COUNT(*) c FROM leads'),
+    'leads_30d'            => $safe_count('SELECT COUNT(*) c FROM leads WHERE created_at >= NOW() - INTERVAL 30 DAY'),
+    'voucher_claims_total' => $safe_count('SELECT COUNT(*) c FROM voucher_claims'),
+    'qr_scans_total'       => $safe_count('SELECT COUNT(*) c FROM campaign_scans'),
+    'page_views_30d'       => $safe_count('SELECT COUNT(*) c FROM analytics_events WHERE event_type = "page_view" AND created_at >= NOW() - INTERVAL 30 DAY'),
 ];
 
 // Inquiries (table may be brand new — handle gracefully)
