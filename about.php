@@ -20,6 +20,13 @@ $page_title = 'About Us | AICAP Furniture BOS';
 $page_desc  = 'AICAP Furniture BOS is a multi-tenant SaaS platform that gives every '
             . 'furniture brand its own branded website, e-catalog, voucher system, '
             . 'lead capture and analytics — all under one digital franchise OS.';
+
+$tenants = db_all(
+    'SELECT name, slug, subdomain, logo, theme_color
+       FROM companies WHERE status = "active" ORDER BY name LIMIT 12'
+);
+$on_platform = (($_SERVER['HTTP_HOST'] ?? '') === APP_BASE_DOMAIN
+              || ($_SERVER['HTTP_HOST'] ?? '') === 'www.' . APP_BASE_DOMAIN);
 ?><!doctype html>
 <html lang="en">
 <head>
@@ -89,6 +96,32 @@ section p  { color:#374151; max-width: 720px; }
 .stat { background: var(--bg); color:#fff; padding: 22px; border-radius:12px; }
 .stat .v { font-size: 30px; font-weight: 800; color: var(--accent); }
 .stat .l { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+.steps { display:grid; gap:18px; grid-template-columns: 1fr; margin-top:24px; }
+@media (min-width: 760px) { .steps { grid-template-columns: repeat(3, 1fr); } }
+.step { background:#fff; padding: 22px; border-radius: 12px; border:1px solid #e5e7eb; position:relative; }
+.step .num { position:absolute; top:-14px; left: 22px; width:32px; height:32px; border-radius: 8px;
+  background: var(--bg); color: var(--accent); display:flex; align-items:center; justify-content:center;
+  font-weight: 800; }
+.step h3 { margin: 8px 0 6px; font-size: 17px; }
+.step p  { margin: 0; color: #4b5563; font-size: 14px; }
+
+.brands { display:grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); margin-top: 22px; }
+.brand-card {
+  background:#fff; border:1px solid #e5e7eb; border-radius: 10px;
+  padding: 14px; display:flex; gap:12px; align-items:center; text-decoration:none; color:#111;
+  transition: transform .15s, border-color .15s, box-shadow .15s;
+}
+.brand-card:hover { transform: translateY(-2px); border-color: var(--accent); box-shadow: 0 6px 14px rgba(0,0,0,.06); }
+.brand-card .logo {
+  width:42px; height:42px; border-radius: 8px; background:#f3f4f6;
+  display:flex; align-items:center; justify-content:center; font-weight:800; color:#fff;
+  overflow: hidden; flex-shrink: 0;
+}
+.brand-card .logo img { width:100%; height:100%; object-fit:contain; padding:5px; background:#fff; }
+.brand-card .meta strong { display:block; font-size: 14px; line-height: 1.2; }
+.brand-card .meta span  { font-size: 12px; color:#6b7280; }
+.brands-empty { color:#9ca3af; font-size: 14px; }
 
 .cta-band { background: linear-gradient(135deg, var(--bg), #1f2937); color:#fff; }
 .cta-band h2 { color:#fff; }
@@ -201,6 +234,67 @@ footer.site .copy { opacity:.6; font-size:12px; }
     </div>
   </div>
 </section>
+
+<!-- How AICAP works -->
+<section>
+  <div class="container">
+    <h2>How AICAP works for your brand</h2>
+    <p>Three short steps from kick-off to a fully-branded furniture website live on the web.</p>
+    <div class="steps">
+      <div class="step">
+        <div class="num">1</div>
+        <h3>Onboard your brand</h3>
+        <p>We provision your subdomain (or wire up your own domain), create your admin account
+           and set the brand colors, logo and contact details so the site looks like yours from day one.</p>
+      </div>
+      <div class="step">
+        <div class="num">2</div>
+        <h3>Publish your catalog</h3>
+        <p>Add categories, subcategories, products and variants — or seed a starter catalog
+           with one click and edit from there. Mark items as Featured and they appear on your homepage.</p>
+      </div>
+      <div class="step">
+        <div class="num">3</div>
+        <h3>Capture &amp; convert leads</h3>
+        <p>Every WhatsApp click, voucher claim and QR scan becomes a tracked lead, attributed to
+           the right campaign and salesperson. Watch performance in your dashboard.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Trusted brands strip -->
+<?php if ($tenants): ?>
+<section class="alt">
+  <div class="container">
+    <h2>Trusted by furniture brands</h2>
+    <p>A few of the companies already running on AICAP. Each one keeps its own brand,
+       customers and analytics — fully isolated, fully on-brand.</p>
+
+    <div class="brands">
+      <?php foreach ($tenants as $t):
+        $href = $on_platform
+          ? 'https://' . $t['subdomain'] . '.' . APP_BASE_DOMAIN
+          : '/?as=' . rawurlencode($t['slug']);
+      ?>
+        <a class="brand-card" href="<?= e($href) ?>" <?= $on_platform ? 'target="_blank" rel="noopener"' : '' ?>>
+          <div class="logo" style="background: <?= e($t['theme_color'] ?: '#1e293b') ?>;">
+            <?php if (!empty($t['logo'])): ?>
+              <img src="<?= e($t['logo']) ?>" alt="<?= e($t['name']) ?>">
+            <?php else: ?>
+              <?= e(strtoupper(substr($t['name'], 0, 1))) ?>
+            <?php endif; ?>
+          </div>
+          <div class="meta">
+            <strong><?= e($t['name']) ?></strong>
+            <span><?= e($t['subdomain']) ?>.<?= e(APP_BASE_DOMAIN) ?></span>
+          </div>
+        </a>
+      <?php endforeach; ?>
+    </div>
+  </div>
+</section>
+<?php endif; ?>
 
 <!-- CTA -->
 <section class="cta-band">
