@@ -77,6 +77,8 @@ CREATE TABLE IF NOT EXISTS branches (
   whatsapp_number VARCHAR(40) DEFAULT NULL,
   email VARCHAR(150) DEFAULT NULL,
   google_map_embed TEXT,
+  google_map_link VARCHAR(500) DEFAULT NULL,
+  waze_link VARCHAR(500) DEFAULT NULL,
   operating_hours VARCHAR(255) DEFAULT NULL,
   status ENUM('active','disabled') NOT NULL DEFAULT 'active',
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,

@@ -27,6 +27,23 @@ try {
     db()->exec($sql);
     append($msgs, '✓ Schema applied.');
 
+    // ----- Idempotent column adds (run safely on existing DBs) -----
+    $columns_to_add = [
+        ['branches', 'google_map_link', "VARCHAR(500) DEFAULT NULL AFTER google_map_embed"],
+        ['branches', 'waze_link',       "VARCHAR(500) DEFAULT NULL AFTER google_map_link"],
+    ];
+    foreach ($columns_to_add as [$tbl, $col, $type]) {
+        $exists = db_one(
+            'SELECT 1 AS x FROM information_schema.COLUMNS
+              WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ?',
+            [DB_NAME, $tbl, $col]
+        );
+        if (!$exists) {
+            db()->exec("ALTER TABLE {$tbl} ADD COLUMN {$col} {$type}");
+            append($msgs, "✓ Added column {$tbl}.{$col}.");
+        }
+    }
+
     // Seed super admin
     $superEmail = 'admin@aicap.my';
     $superPass  = 'Admin@12345';

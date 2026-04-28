@@ -20,6 +20,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'whatsapp_number'  => (string) input('whatsapp_number', ''),
         'email'            => (string) input('email', ''),
         'google_map_embed' => (string) input('google_map_embed', ''),
+        'google_map_link'  => trim((string) input('google_map_link', '')),
+        'waze_link'        => trim((string) input('waze_link', '')),
         'operating_hours'  => (string) input('operating_hours', ''),
         'status'           => in_array(input('status'), ['active','disabled'], true) ? input('status') : 'active',
     ];
@@ -27,15 +29,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         tenant_row_or_404('branches', $id);
         db_exec(
             'UPDATE branches SET name=?, address=?, phone=?, whatsapp_number=?, email=?,
-                                 google_map_embed=?, operating_hours=?, status=?
+                                 google_map_embed=?, google_map_link=?, waze_link=?,
+                                 operating_hours=?, status=?
               WHERE company_id=? AND id=?',
             [...array_values($f), $CID, $id]
         );
     } else {
         db_insert(
             'INSERT INTO branches (company_id, name, address, phone, whatsapp_number, email,
-                                   google_map_embed, operating_hours, status)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                                   google_map_embed, google_map_link, waze_link,
+                                   operating_hours, status)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
             [$CID, ...array_values($f)]
         );
     }
@@ -69,8 +73,19 @@ ca_open('Branches');
       <div class="col"><label>Email</label><input class="input" name="email" value="<?= e($editing['email'] ?? '') ?>"></div>
       <div class="col"><label>Operating Hours</label><input class="input" name="operating_hours" value="<?= e($editing['operating_hours'] ?? '') ?>"></div>
     </div>
-    <label>Google Map Embed</label>
-    <textarea class="input" name="google_map_embed" rows="2"><?= e($editing['google_map_embed'] ?? '') ?></textarea>
+    <label>Google Map Embed (full <code>&lt;iframe&gt;</code> code from Google Maps → Share → Embed a map)</label>
+    <textarea class="input" name="google_map_embed" rows="2" placeholder='<iframe src="https://www.google.com/maps/embed?..." ...></iframe>'><?= e($editing['google_map_embed'] ?? '') ?></textarea>
+    <div class="row">
+      <div class="col">
+        <label>Google Maps Link <span class="muted">(for the "Open in Google Maps" button)</span></label>
+        <input class="input" name="google_map_link" placeholder="https://maps.app.goo.gl/..." value="<?= e($editing['google_map_link'] ?? '') ?>">
+      </div>
+      <div class="col">
+        <label>Waze Link <span class="muted">(from waze.com → Share → Live URL)</span></label>
+        <input class="input" name="waze_link" placeholder="https://waze.com/ul?ll=..." value="<?= e($editing['waze_link'] ?? '') ?>">
+      </div>
+    </div>
+    <p class="muted" style="margin-top:6px">Tip: leave the deep links empty and we'll auto-build them from the address.</p>
     <p><button class="btn primary">Save</button>
        <?php if ($editing): ?><a class="btn outline" href="/company-admin/branches.php">New</a><?php endif; ?>
     </p>
