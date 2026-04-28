@@ -221,7 +221,7 @@ footer.site .copy { margin-top:24px; padding-top:14px; border-top:1px solid #1f2
       <a href="/" <?= $page_id === 'home' ? 'class="active"' : '' ?>>Home</a>
       <a href="/catalog.php" <?= $page_id === 'catalog' ? 'class="active"' : '' ?>>Catalog</a>
       <a href="/voucher.php" <?= $page_id === 'voucher' ? 'class="active"' : '' ?>>Vouchers</a>
-      <a href="/#visit">Visit Us</a>
+      <a href="/visit.php" <?= $page_id === 'visit' ? 'class="active"' : '' ?>>Visit Us</a>
       <?php if (current_member()): ?>
         <a href="/member-dashboard.php">My Account</a>
       <?php else: ?>

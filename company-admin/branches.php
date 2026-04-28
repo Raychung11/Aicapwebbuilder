@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/_bootstrap.php';
 require_once __DIR__ . '/../inc/db.php';
+require_once __DIR__ . '/../inc/upload.php';
 
 $action = (string) input('action', '');
 $id     = (int) input('id', 0);
@@ -9,9 +10,57 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_check();
     if ($action === 'delete' && $id) {
         tenant_row_or_404('branches', $id);
+        // Delete branch images from disk + DB
+        $imgs = db_all('SELECT * FROM branch_images WHERE company_id = ? AND branch_id = ?', [$CID, $id]);
+        foreach ($imgs as $im) {
+            $abs = __DIR__ . '/..' . $im['image_path'];
+            if (is_file($abs)) @unlink($abs);
+        }
+        db_exec('DELETE FROM branch_images WHERE company_id = ? AND branch_id = ?', [$CID, $id]);
         db_exec('DELETE FROM branches WHERE company_id = ? AND id = ?', [$CID, $id]);
         flash_set('success', 'Branch deleted.');
         redirect('/company-admin/branches.php');
+    }
+
+    if ($action === 'delete_image') {
+        $iid = (int) input('image_id', 0);
+        $im  = db_one('SELECT * FROM branch_images WHERE company_id = ? AND id = ?', [$CID, $iid]);
+        if ($im) {
+            db_exec('DELETE FROM branch_images WHERE company_id = ? AND id = ?', [$CID, $iid]);
+            $abs = __DIR__ . '/..' . $im['image_path'];
+            if (is_file($abs)) @unlink($abs);
+            flash_set('success', 'Image deleted.');
+        }
+        redirect('/company-admin/branches.php?id=' . (int) $im['branch_id']);
+    }
+
+    if ($action === 'upload_images' && $id) {
+        tenant_row_or_404('branches', $id);
+        if (!empty($_FILES['images']['name'][0])) {
+            foreach ($_FILES['images']['name'] as $i => $_n) {
+                $file = [
+                    'name'     => $_FILES['images']['name'][$i],
+                    'type'     => $_FILES['images']['type'][$i],
+                    'tmp_name' => $_FILES['images']['tmp_name'][$i],
+                    'error'    => $_FILES['images']['error'][$i],
+                    'size'     => $_FILES['images']['size'][$i],
+                ];
+                $url = save_upload($file, $CID, 'branches');
+                if ($url) {
+                    $isPrimary = db_one(
+                        'SELECT COUNT(*) c FROM branch_images WHERE company_id = ? AND branch_id = ?',
+                        [$CID, $id]
+                    )['c'] == 0 ? 1 : 0;
+                    db_insert(
+                        'INSERT INTO branch_images (company_id, branch_id, image_path, is_primary, sort_order)
+                         VALUES (?, ?, ?, ?, ?)',
+                        [$CID, $id, $url, $isPrimary, $i]
+                    );
+                }
+            }
+            flash_set('success', 'Images uploaded.');
+        }
+        redirect('/company-admin/branches.php?id=' . $id);
     }
     $f = [
         'name'             => trim((string) input('name')),
@@ -92,12 +141,59 @@ ca_open('Branches');
   </form>
 </div>
 
+<?php if ($editing):
+  $branch_imgs = tenant_all(
+      'SELECT * FROM branch_images WHERE company_id = ? AND branch_id = ?
+        ORDER BY is_primary DESC, sort_order ASC',
+      $CID, [(int) $editing['id']]
+  );
+?>
+<div class="card">
+  <h3 style="margin:0 0 6px;">Showroom photos for <?= e($editing['name']) ?></h3>
+  <p class="muted" style="margin:0 0 12px;">Shown on the public Visit Us page. Recommended landscape, min 1200×800 px.</p>
+
+  <form method="post" enctype="multipart/form-data" style="margin-bottom:14px;">
+    <?= csrf_field() ?>
+    <input type="hidden" name="action" value="upload_images">
+    <input type="hidden" name="id" value="<?= (int) $editing['id'] ?>">
+    <input type="file" name="images[]" multiple accept="image/*" required>
+    <button class="btn primary" type="submit" style="margin-left:8px;">Upload</button>
+  </form>
+
+  <?php if ($branch_imgs): ?>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;">
+      <?php foreach ($branch_imgs as $im): ?>
+        <div style="position:relative;width:140px;">
+          <img src="<?= e($im['image_path']) ?>"
+               style="width:140px;height:140px;object-fit:cover;border-radius:8px;background:#eee;">
+          <form method="post" onsubmit="return confirm('Delete this photo?')"
+                style="position:absolute;top:4px;right:4px;">
+            <?= csrf_field() ?>
+            <input type="hidden" name="action" value="delete_image">
+            <input type="hidden" name="image_id" value="<?= (int)$im['id'] ?>">
+            <button class="btn danger" type="submit" style="padding:2px 8px;font-size:11px;">×</button>
+          </form>
+        </div>
+      <?php endforeach; ?>
+    </div>
+  <?php else: ?>
+    <p class="muted">No photos uploaded yet.</p>
+  <?php endif; ?>
+</div>
+<?php endif; ?>
+
 <div class="card">
   <table>
-    <tr><th>Name</th><th>Phone</th><th>Address</th><th>Status</th><th></th></tr>
-    <?php foreach ($branches as $b): ?>
+    <tr><th>Name</th><th>Photos</th><th>Phone</th><th>Address</th><th>Status</th><th></th></tr>
+    <?php foreach ($branches as $b):
+      $img_count = (int) db_one(
+          'SELECT COUNT(*) c FROM branch_images WHERE company_id = ? AND branch_id = ?',
+          [$CID, (int) $b['id']]
+      )['c'];
+    ?>
       <tr>
         <td><?= e($b['name']) ?></td>
+        <td><?= $img_count > 0 ? '🖼️ ' . $img_count : '<span class="muted">—</span>' ?></td>
         <td><?= e($b['phone']) ?></td>
         <td><?= e($b['address']) ?></td>
         <td><span class="badge <?= $b['status']==='active'?'green':'red' ?>"><?= e($b['status']) ?></span></td>

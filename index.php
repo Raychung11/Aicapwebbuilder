@@ -212,7 +212,7 @@ require __DIR__ . '/inc/header.php';
 <?php if ($branches): ?>
 <section id="visit" style="background:#fff">
   <div class="container">
-    <h2>Visit Our Showroom</h2>
+    <h2>Visit Our Showroom <a href="/visit.php" style="font-size:14px;font-weight:500;margin-left:8px;">See all →</a></h2>
     <div class="grid" style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr))">
       <?php foreach ($branches as $b):
         $maps_url = $b['google_map_link'] ?: ($b['address']
