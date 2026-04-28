@@ -14,23 +14,31 @@ if (!$company) {
 $CID = (int) $company['id'];
 
 $CA_MENU = [
-    ['file' => 'index.php',        'label' => 'Dashboard'],
-    ['file' => 'settings.php',     'label' => 'Branding & SEO'],
-    ['file' => 'branches.php',     'label' => 'Branches'],
-    ['file' => 'salespersons.php', 'label' => 'Salespersons'],
-    ['file' => 'products.php',     'label' => 'Products'],
-    ['file' => 'featured.php',     'label' => '⭐ Featured'],
-    ['file' => 'vouchers.php',     'label' => 'Vouchers'],
-    ['file' => 'campaigns.php',    'label' => 'Campaigns'],
-    ['file' => 'leads.php',        'label' => 'Leads'],
-    ['file' => 'pages.php',        'label' => 'Pages'],
-    ['file' => 'media.php',        'label' => 'Media'],
+    ['file' => 'index.php',        'label' => 'Dashboard',       'icon' => '🏠'],
+    ['file' => 'settings.php',     'label' => 'Branding & SEO',  'icon' => '🎨'],
+    ['file' => 'branches.php',     'label' => 'Branches',        'icon' => '📍'],
+    ['file' => 'salespersons.php', 'label' => 'Salespersons',    'icon' => '👥'],
+    ['file' => 'products.php',     'label' => 'Products',        'icon' => '🛋️'],
+    ['file' => 'featured.php',     'label' => 'Featured',        'icon' => '⭐'],
+    ['file' => 'vouchers.php',     'label' => 'Vouchers',        'icon' => '🎁'],
+    ['file' => 'campaigns.php',    'label' => 'Campaigns',       'icon' => '📷'],
+    ['file' => 'leads.php',        'label' => 'Leads',           'icon' => '🎯'],
+    ['file' => 'pages.php',        'label' => 'Pages',           'icon' => '📄'],
+    ['file' => 'media.php',        'label' => 'Media',           'icon' => '🖼️'],
 ];
 
 function ca_open(string $title): void {
     global $CA_MENU, $ca, $company;
-    admin_head($company['name'] . ' &middot; ' . $title, '/company-admin', $CA_MENU,
-        $ca['name'], '/company-admin/logout.php');
+    admin_head(
+        $title,
+        '/company-admin',
+        $CA_MENU,
+        $ca['name'],
+        '/company-admin/logout.php',
+        $company['name'],                                        // brand
+        'Tenant Admin',                                          // brand_sub
+        $company['theme_color'] ?: '#2563eb'                     // accent
+    );
 }
 function ca_close(): void { admin_foot(); }
 

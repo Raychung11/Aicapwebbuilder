@@ -84,9 +84,34 @@ header.site .brand span { overflow: hidden; text-overflow: ellipsis; white-space
 nav.site { display:flex; align-items:center; gap:18px; }
 nav.site a { font-size: 14px; opacity: 0.92; }
 nav.site a:hover { opacity: 1; }
-.nav-toggle { display: none; background: none; border: 0; color: #fff; padding: 6px 10px; font-size: 22px; cursor: pointer; line-height: 1; }
+nav.site a.active { opacity: 1; box-shadow: inset 0 -2px 0 var(--c-secondary); }
+
+/* Hamburger button — animated 3-bars → X */
+.nav-toggle {
+  display: none; background: transparent; border: 0; padding: 8px; cursor: pointer;
+  border-radius: 8px; transition: background .15s;
+}
+.nav-toggle:hover { background: rgba(255,255,255,.1); }
+.nav-toggle .bars { width: 22px; height: 16px; position: relative; display:block; }
+.nav-toggle .bars::before, .nav-toggle .bars::after, .nav-toggle .bars span {
+  content: ''; position: absolute; left: 0; right: 0; height: 2px; background: #fff;
+  border-radius: 2px;
+  transition: top .25s ease, transform .25s ease, opacity .15s ease;
+}
+.nav-toggle .bars::before { top: 0; }
+.nav-toggle .bars span    { top: 7px; }
+.nav-toggle .bars::after  { top: 14px; }
+body.menu-open .nav-toggle .bars::before { top: 7px; transform: rotate(45deg); }
+body.menu-open .nav-toggle .bars span    { opacity: 0; }
+body.menu-open .nav-toggle .bars::after  { top: 7px; transform: rotate(-45deg); }
+
+/* Backdrop for mobile menu */
+.nav-backdrop {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4);
+  opacity: 0; pointer-events: none; transition: opacity .25s; z-index: 40;
+}
 @media (max-width: 720px) {
-  .nav-toggle { display: block; }
+  .nav-toggle { display: inline-flex; align-items:center; }
   nav.site {
     position: absolute; top: 100%; right: 0; left: 0;
     background: var(--c-primary);
@@ -95,7 +120,9 @@ nav.site a:hover { opacity: 1; }
     box-shadow: 0 8px 18px rgba(0,0,0,.15);
   }
   nav.site a { padding: 14px 18px; border-top: 1px solid rgba(255,255,255,.08); }
-  nav.site.open { max-height: 360px; }
+  body.menu-open nav.site { max-height: 420px; }
+  body.menu-open { overflow: hidden; }
+  body.menu-open .nav-backdrop { display: block; opacity: 1; pointer-events: auto; }
 }
 
 /* ---------- Section index (landing) ---------- */
@@ -215,9 +242,11 @@ footer.site .copy { margin-top:24px; padding-top:14px; border-top:1px solid #1f2
       <?php endif; ?>
       <span><?= e($company['name']) ?></span>
     </a>
-    <button class="nav-toggle" aria-label="Open menu"
-            onclick="this.nextElementSibling.classList.toggle('open')">&#9776;</button>
-    <nav class="site">
+    <button type="button" class="nav-toggle" id="nav-toggle"
+            aria-label="Toggle menu" aria-expanded="false" aria-controls="site-nav">
+      <span class="bars"><span></span></span>
+    </button>
+    <nav class="site" id="site-nav">
       <a href="/" <?= $page_id === 'home' ? 'class="active"' : '' ?>>Home</a>
       <a href="/catalog.php" <?= $page_id === 'catalog' ? 'class="active"' : '' ?>>Catalog</a>
       <a href="/voucher.php" <?= $page_id === 'voucher' ? 'class="active"' : '' ?>>Vouchers</a>
@@ -230,3 +259,18 @@ footer.site .copy { margin-top:24px; padding-top:14px; border-top:1px solid #1f2
     </nav>
   </div>
 </header>
+<div class="nav-backdrop" id="nav-backdrop"></div>
+<script>
+(function () {
+  var btn = document.getElementById('nav-toggle');
+  var bd  = document.getElementById('nav-backdrop');
+  if (!btn) return;
+  function close () { document.body.classList.remove('menu-open'); btn.setAttribute('aria-expanded','false'); }
+  function open  () { document.body.classList.add('menu-open');    btn.setAttribute('aria-expanded','true'); }
+  btn.addEventListener('click', function () {
+    document.body.classList.contains('menu-open') ? close() : open();
+  });
+  if (bd) bd.addEventListener('click', close);
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
+})();
+</script>
