@@ -1,0 +1,38 @@
+# Furniture BOS - Apache configuration
+
+<IfModule mod_rewrite.c>
+RewriteEngine On
+
+# Block direct access to /inc and /sql from the web
+RewriteRule ^inc(/.*)?$ - [F,L]
+RewriteRule ^sql(/.*)?$ - [F,L]
+
+# Pretty QR campaign URL: /q/{company_slug}/{qr_slug} -> /q.php
+RewriteRule ^q/([a-z0-9_-]+)/([a-z0-9_-]+)/?$ /q.php?c=$1&k=$2 [L,QSA]
+
+# Tenant-page friendly URL: /p/{slug} -> /page.php?slug=...
+RewriteRule ^p/([a-z0-9_-]+)/?$ /page.php?slug=$1 [L,QSA]
+
+# Tenant product friendly URL: /products/{slug} -> /product.php?slug=...
+RewriteRule ^products/([a-z0-9_-]+)/?$ /product.php?slug=$1 [L,QSA]
+</IfModule>
+
+# Disable directory listing
+Options -Indexes
+
+# Force HTTPS in production (uncomment when SSL is live)
+# <IfModule mod_rewrite.c>
+#   RewriteCond %{HTTPS} off
+#   RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+# </IfModule>
+
+# Default character set
+AddDefaultCharset utf-8
+
+# Cache headers for uploaded images
+<IfModule mod_expires.c>
+  ExpiresActive On
+  <FilesMatch "\.(jpg|jpeg|png|webp|gif|svg|ico)$">
+    ExpiresDefault "access plus 7 days"
+  </FilesMatch>
+</IfModule>
