@@ -204,7 +204,7 @@ button.submit:active { transform: translateY(1px); }
 
       <div class="options">
         <label><input type="checkbox" name="remember"> Keep me signed in</label>
-        <a href="mailto:support@aicap.my?subject=Password%20reset">Forgot password?</a>
+        <a href="/admin/forgot-password.php">Forgot password?</a>
       </div>
 
       <button class="submit" type="submit">Sign in →</button>

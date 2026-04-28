@@ -405,6 +405,26 @@ CREATE TABLE IF NOT EXISTS partner_inquiries (
   KEY idx_inq_type (type)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- ---------------------------------------------------------------------
+-- password_resets  (forgot-password tokens for super_admin / company_admin / member)
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS password_resets (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  role ENUM('super_admin','company_admin','member') NOT NULL,
+  user_id INT UNSIGNED NOT NULL,
+  email VARCHAR(190) NOT NULL,
+  token VARCHAR(64) NOT NULL,
+  expires_at DATETIME NOT NULL,
+  used_at DATETIME DEFAULT NULL,
+  ip_address VARCHAR(45) DEFAULT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uniq_pr_token (token),
+  KEY idx_pr_email (email),
+  KEY idx_pr_user (role, user_id),
+  KEY idx_pr_expires (expires_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- Run install.php once after importing this schema to seed the

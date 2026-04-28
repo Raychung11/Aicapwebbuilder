@@ -70,4 +70,7 @@ $wa = $company['whatsapp_number'] ?? '';
     </div>
   </div>
 </footer>
+
+<?php require __DIR__ . '/chatbot.php'; ?>
+
 </body></html>
