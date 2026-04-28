@@ -1,16 +1,22 @@
 <?php
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/auth.php';   // for session_boot()
 
 /**
- * Tenant resolution from HTTP host.
+ * Tenant resolution.
  *
- * Rules:
- *   aicap.my            → null   (root / HQ)
- *   www.aicap.my        → null
- *   ladore.aicap.my     → company by subdomain "ladore"
- *   ladore.example.com  → company by custom_domain
+ * Order of precedence:
+ *   1. ?as=<slug>         → set session preview + redirect to clean URL
+ *   2. ?exit_preview      → clear session preview
+ *   3. session preview    → render that company (used while testing on a
+ *                           preview / Hostinger temp domain)
+ *   4. Host header        → subdomain or custom_domain match
+ *   5. If exactly one active company exists AND host doesn't match the
+ *      configured platform domain, fall back to that company. This makes
+ *      a Hostinger preview URL "just work" for a single tenant before DNS
+ *      is wired up.
  *
- * The result is cached per-request.
+ * Result is cached per request.
  */
 function current_company(): ?array {
     static $cache = false;
@@ -18,35 +24,88 @@ function current_company(): ?array {
         return $cache;
     }
 
+    // 1. Explicit preview switch via query string
+    if (isset($_GET['as']) && $_GET['as'] !== '') {
+        $slug = preg_replace('/[^a-z0-9_-]/i', '', (string) $_GET['as']);
+        if ($slug) {
+            $row = db_one(
+                'SELECT * FROM companies WHERE slug = ? AND status = "active" LIMIT 1',
+                [$slug]
+            );
+            if ($row) {
+                session_boot();
+                $_SESSION['preview_company_id'] = (int) $row['id'];
+                // Strip the ?as= and redirect to a clean URL so refresh stays sticky.
+                $clean = strtok($_SERVER['REQUEST_URI'] ?? '/', '?');
+                $qs = $_GET;
+                unset($qs['as']);
+                if ($qs) $clean .= '?' . http_build_query($qs);
+                header('Location: ' . $clean);
+                exit;
+            }
+        }
+    }
+
+    // 2. Clear preview
+    if (isset($_GET['exit_preview'])) {
+        session_boot();
+        unset($_SESSION['preview_company_id']);
+        $clean = strtok($_SERVER['REQUEST_URI'] ?? '/', '?');
+        header('Location: ' . $clean);
+        exit;
+    }
+
+    // 3. Sticky session preview (set by step 1)
+    session_boot();
+    if (!empty($_SESSION['preview_company_id'])) {
+        $row = db_one(
+            'SELECT * FROM companies WHERE id = ? AND status = "active" LIMIT 1',
+            [(int) $_SESSION['preview_company_id']]
+        );
+        if ($row) {
+            $cache = $row;
+            return $cache;
+        }
+    }
+
+    // 4. Host-based resolution
     $host = strtolower($_SERVER['HTTP_HOST'] ?? '');
     $host = preg_replace('/:\d+$/', '', $host);  // strip port
 
-    if ($host === '' || $host === APP_BASE_DOMAIN || $host === 'www.' . APP_BASE_DOMAIN) {
-        $cache = null;
-        return null;
-    }
-
-    // Subdomain on the platform domain
-    $base = '.' . APP_BASE_DOMAIN;
-    if (substr($host, -strlen($base)) === $base) {
-        $sub = substr($host, 0, -strlen($base));
-        if ($sub === '' || $sub === 'www') {
-            $cache = null;
-            return null;
+    if ($host !== '' && $host !== APP_BASE_DOMAIN && $host !== 'www.' . APP_BASE_DOMAIN) {
+        $base = '.' . APP_BASE_DOMAIN;
+        if (substr($host, -strlen($base)) === $base) {
+            $sub = substr($host, 0, -strlen($base));
+            if ($sub !== '' && $sub !== 'www') {
+                $cache = db_one(
+                    'SELECT * FROM companies WHERE subdomain = ? AND status = "active" LIMIT 1',
+                    [$sub]
+                );
+                if ($cache) return $cache;
+            }
+        } else {
+            // Custom domain
+            $cache = db_one(
+                'SELECT * FROM companies WHERE custom_domain = ? AND status = "active" LIMIT 1',
+                [$host]
+            );
+            if ($cache) return $cache;
         }
-        $cache = db_one(
-            'SELECT * FROM companies WHERE subdomain = ? AND status = "active" LIMIT 1',
-            [$sub]
-        );
-        return $cache;
     }
 
-    // Custom domain
-    $cache = db_one(
-        'SELECT * FROM companies WHERE custom_domain = ? AND status = "active" LIMIT 1',
-        [$host]
-    );
-    return $cache;
+    // 5. Single-tenant fallback (only when host doesn't match the platform
+    //    domain — i.e. you're on a preview URL like *.hostingersite.com).
+    $on_platform = ($host === APP_BASE_DOMAIN || $host === 'www.' . APP_BASE_DOMAIN);
+    if (!$on_platform) {
+        $count = (int) (db_one('SELECT COUNT(*) c FROM companies WHERE status = "active"')['c'] ?? 0);
+        if ($count === 1) {
+            $cache = db_one('SELECT * FROM companies WHERE status = "active" LIMIT 1');
+            return $cache;
+        }
+    }
+
+    $cache = null;
+    return null;
 }
 
 /**
@@ -79,4 +138,14 @@ function company_url(array $company, string $path = '/'): string {
         return APP_URL_SCHEME . '://' . $company['custom_domain'] . $path;
     }
     return APP_URL_SCHEME . '://' . $company['subdomain'] . '.' . APP_BASE_DOMAIN . $path;
+}
+
+/**
+ * True if the active company was selected via the ?as= preview override.
+ */
+function is_preview_mode(): bool {
+    if (session_status() !== PHP_SESSION_ACTIVE) {
+        return false;
+    }
+    return !empty($_SESSION['preview_company_id']);
 }

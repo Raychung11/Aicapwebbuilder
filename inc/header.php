@@ -165,6 +165,12 @@ footer.site .copy { margin-top:24px; padding-top:14px; border-top:1px solid #1f2
 </style>
 </head>
 <body data-page="<?= e($page_id) ?>">
+<?php if (function_exists('is_preview_mode') && is_preview_mode()): ?>
+<div style="background:#fef3c7;color:#78350f;padding:8px 14px;font-size:13px;text-align:center;">
+  Preview mode — viewing <strong><?= e($company['name']) ?></strong>.
+  <a href="?exit_preview=1" style="color:#7c2d12;text-decoration:underline;font-weight:600;margin-left:8px;">Exit preview</a>
+</div>
+<?php endif; ?>
 <header class="site">
   <div class="container row">
     <a class="brand" href="/">

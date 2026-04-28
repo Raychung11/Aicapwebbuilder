@@ -55,6 +55,24 @@ Point `*.aicap.my` (wildcard) to the same Apache vhost as `aicap.my`. Tenant
 resolution happens in `inc/tenant.php` based on the host header. Custom
 domains can be wired up per-company by setting `companies.custom_domain`.
 
+## Testing on a Hostinger temporary URL
+
+While DNS for `aicap.my` is still being set up you'll be on a one-off URL
+like `https://royalblue-lion-685341.hostingersite.com/`. That host can't
+serve real subdomains, so the tenant resolver provides two fallbacks:
+
+1. **Auto fallback** — if there's exactly one active company in the database,
+   the temp URL renders that company directly. This is the easy mode for a
+   single-tenant launch.
+2. **Preview override** — visit `/?as=<company_slug>` (e.g.
+   `?as=ladore`). The slug is stashed in the session and every subsequent
+   page renders that tenant. Exit with `?exit_preview=1`.
+
+The HQ landing page (visiting `/` from a non-platform host) lists every
+active tenant with a "Preview here" button. Once `aicap.my` DNS is live,
+remove the override by clicking **Exit preview** and real subdomain
+routing takes over automatically.
+
 ## Multi-tenant rules
 
 - Every tenant table includes `company_id`.
