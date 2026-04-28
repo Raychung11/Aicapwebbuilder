@@ -1,0 +1,15 @@
+# Tenant subdomain bootstrap — pairs with index.php in the same folder.
+# Drop these two files into the subdomain's own folder when Hostinger
+# won't let the subdomain share public_html directly.
+
+RewriteEngine On
+
+# If a file or directory exists IN THIS FOLDER, serve it as-is.
+# Otherwise, send the request to index.php which dispatches to the parent app.
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^.*$ index.php [L,QSA]
+
+# No directory listing
+Options -Indexes
+AddDefaultCharset utf-8

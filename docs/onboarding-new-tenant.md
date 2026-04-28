@@ -87,23 +87,21 @@ PHP host-header routing in `inc/tenant.php` does the rest.
 ### Plan B — if Hostinger won't let two domains share `public_html`
 
 If you get a *"Folder is in use"* error, accept the per-subdomain folder
-(e.g. `public_html/ladaza/`) and put two files in it:
+(e.g. `public_html/ladaza/`) and copy two files from the repo into it:
 
-**`public_html/ladaza/index.php`**
-```php
-<?php require __DIR__ . '/../index.php';
-```
+- `docs/tenant-bootstrap/index.php`
+- `docs/tenant-bootstrap/.htaccess`
 
-**`public_html/ladaza/.htaccess`**
-```apache
-RewriteEngine On
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^(.*)$ /index.php [L]
-```
+These two files together dispatch **every** URL on the subdomain
+(`/catalog.php`, `/member-login.php`, `/admin/login.php`, `/uploads/...`
+and so on) back to the matching file in the parent `public_html`, so the
+tenant subdomain behaves exactly like the apex domain — including static
+asset serving with the right content types.
 
-This forwards every request to the main app, which still picks up the
-correct tenant from the host header.
+> ⚠️ Don't use a one-line bootstrap like
+> `<?php require __DIR__ . '/../index.php';` — it only works for the
+> homepage. Every other URL (login, catalog, admin) will silently render
+> the homepage instead, which looks like the page is broken.
 
 ---
 
