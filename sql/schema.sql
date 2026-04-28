@@ -26,6 +26,9 @@ CREATE TABLE IF NOT EXISTS companies (
   whatsapp_number VARCHAR(40) DEFAULT NULL,
   google_map_embed TEXT,
   operating_hours VARCHAR(255) DEFAULT NULL,
+  meta_title VARCHAR(255) DEFAULT NULL,
+  meta_description TEXT,
+  og_image VARCHAR(255) DEFAULT NULL,
   status ENUM('active','suspended','disabled') NOT NULL DEFAULT 'active',
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
@@ -135,13 +138,17 @@ CREATE TABLE IF NOT EXISTS products (
   price_min DECIMAL(12,2) DEFAULT NULL,
   price_max DECIMAL(12,2) DEFAULT NULL,
   stock_status ENUM('in_stock','out_of_stock','preorder') NOT NULL DEFAULT 'in_stock',
+  is_featured TINYINT(1) NOT NULL DEFAULT 0,
+  meta_title VARCHAR(255) DEFAULT NULL,
+  meta_description TEXT,
   status ENUM('active','draft','archived') NOT NULL DEFAULT 'active',
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   UNIQUE KEY uniq_company_slug (company_id, slug),
   KEY idx_prod_company (company_id),
   KEY idx_prod_category (company_id, category),
-  KEY idx_prod_subcategory (company_id, category, subcategory)
+  KEY idx_prod_subcategory (company_id, category, subcategory),
+  KEY idx_prod_featured (company_id, is_featured)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ---------------------------------------------------------------------

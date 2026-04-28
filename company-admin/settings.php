@@ -28,6 +28,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirect('/company-admin/settings.php');
     }
 
+    if ($form === 'seo') {
+        if (!empty($_FILES['og_image']['name'])) {
+            $url = save_upload($_FILES['og_image'], $CID, 'branding');
+            if ($url) {
+                db_exec('UPDATE companies SET og_image = ? WHERE id = ?', [$url, $CID]);
+            }
+        }
+        $meta = [
+            'meta_title'       => trim((string) input('meta_title', '')) ?: null,
+            'meta_description' => trim((string) input('meta_description', '')) ?: null,
+        ];
+        db_exec('UPDATE companies SET meta_title = ?, meta_description = ? WHERE id = ?',
+                [...array_values($meta), $CID]);
+        flash_set('success', 'SEO settings saved.');
+        redirect('/company-admin/settings.php');
+    }
+
+    if ($form === 'remove_og_image') {
+        db_exec('UPDATE companies SET og_image = NULL WHERE id = ?', [$CID]);
+        flash_set('success', 'Social share image removed.');
+        redirect('/company-admin/settings.php');
+    }
+
     // Default: save the rest of the branding/contact settings.
     $fields = [
         'name'                  => trim((string) input('name')),
@@ -127,6 +150,61 @@ ca_open('Branding & Settings');
     <label>Google Map Embed (optional company-wide map)</label>
     <textarea class="input" name="google_map_embed" rows="2"><?= e($company['google_map_embed']) ?></textarea>
     <p style="margin-top:14px"><button class="btn primary">Save Settings</button></p>
+  </form>
+</div>
+
+<!-- ===== SEO meta tags ===== -->
+<div class="card">
+  <h3 style="margin:0 0 4px;">SEO &amp; Social Sharing</h3>
+  <p class="muted" style="margin:0 0 14px;">Controls what shows in Google results and on social previews (WhatsApp, Facebook, Twitter, LinkedIn).</p>
+
+  <form method="post" enctype="multipart/form-data">
+    <?= csrf_field() ?>
+    <input type="hidden" name="form" value="seo">
+
+    <div class="row">
+      <div class="col">
+        <label>Meta Title <span class="muted">(falls back to company name; aim for ~60 chars)</span></label>
+        <input class="input" name="meta_title" maxlength="255"
+               placeholder="<?= e($company['name']) ?>"
+               value="<?= e($company['meta_title'] ?? '') ?>">
+      </div>
+    </div>
+
+    <label>Meta Description <span class="muted">(aim for 120–160 chars)</span></label>
+    <textarea class="input" name="meta_description" rows="3" maxlength="500"
+              placeholder="<?= e(mb_substr($company['description'] ?? '', 0, 160)) ?>"><?= e($company['meta_description'] ?? '') ?></textarea>
+
+    <div class="row" style="margin-top:14px;align-items:flex-start;">
+      <div class="col" style="flex:0 0 180px;">
+        <label>Social share image</label>
+        <div style="width:160px;height:90px;border:2px dashed #d1d5db;border-radius:8px;display:flex;align-items:center;justify-content:center;background:#f9fafb;overflow:hidden;">
+          <?php if (!empty($company['og_image'])): ?>
+            <img src="<?= e($company['og_image']) ?>" alt="" style="max-width:100%;max-height:100%;object-fit:contain;">
+          <?php elseif (!empty($company['logo'])): ?>
+            <img src="<?= e($company['logo']) ?>" alt="" style="max-width:100%;max-height:100%;object-fit:contain;opacity:.6;">
+          <?php else: ?>
+            <span class="muted" style="font-size:12px">No image</span>
+          <?php endif; ?>
+        </div>
+      </div>
+      <div class="col">
+        <label>Upload (optional)</label>
+        <input type="file" name="og_image" accept="image/*">
+        <p class="muted" style="margin-top:6px;font-size:12px;">
+          Recommended 1200 × 630 px. If empty, your logo is used. Used by
+          WhatsApp / Facebook / Twitter / LinkedIn link previews.
+        </p>
+        <?php if (!empty($company['og_image'])): ?>
+          <button class="btn outline" type="submit" formaction="/company-admin/settings.php"
+                  onclick="this.form.elements['form'].value='remove_og_image';return confirm('Remove social share image?');">
+            Remove image
+          </button>
+        <?php endif; ?>
+      </div>
+    </div>
+
+    <p style="margin-top:14px"><button class="btn primary">Save SEO</button></p>
   </form>
 </div>
 <?php ca_close(); ?>

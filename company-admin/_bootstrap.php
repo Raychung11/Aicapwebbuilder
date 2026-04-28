@@ -15,10 +15,11 @@ $CID = (int) $company['id'];
 
 $CA_MENU = [
     ['file' => 'index.php',        'label' => 'Dashboard'],
-    ['file' => 'settings.php',     'label' => 'Branding & Settings'],
+    ['file' => 'settings.php',     'label' => 'Branding & SEO'],
     ['file' => 'branches.php',     'label' => 'Branches'],
     ['file' => 'salespersons.php', 'label' => 'Salespersons'],
     ['file' => 'products.php',     'label' => 'Products'],
+    ['file' => 'featured.php',     'label' => '⭐ Featured'],
     ['file' => 'vouchers.php',     'label' => 'Vouchers'],
     ['file' => 'campaigns.php',    'label' => 'Campaigns'],
     ['file' => 'leads.php',        'label' => 'Leads'],

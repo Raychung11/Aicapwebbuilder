@@ -17,9 +17,10 @@ function seed_sample_products(int $company_id): array {
         return ['products' => 0, 'vouchers' => 0, 'skipped' => true];
     }
 
+    // First 6 items are flagged as Featured for the homepage.
     $items = sample_furniture_data();
     $count = 0;
-    foreach ($items as $p) {
+    foreach ($items as $idx => $p) {
         $base = slugify($p['name']);
         $slug = $base; $i = 1;
         while (db_one('SELECT id FROM products WHERE company_id = ? AND slug = ?',
@@ -29,12 +30,16 @@ function seed_sample_products(int $company_id): array {
         db_insert(
             'INSERT INTO products
                (company_id, name, slug, category, subcategory, description,
-                price_min, price_max, stock_status, status)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, "in_stock", "active")',
+                price_min, price_max, stock_status, is_featured,
+                meta_title, meta_description, status)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, "in_stock", ?, ?, ?, "active")',
             [
                 $company_id, $p['name'], $slug,
                 $p['category'], $p['subcategory'], $p['description'],
                 $p['price_min'], $p['price_max'],
+                $idx < 6 ? 1 : 0,
+                $p['name'] . ' | ' . $p['category'],
+                $p['meta'] ?? mb_substr(strip_tags($p['description']), 0, 160),
             ]
         );
         $count++;
@@ -72,6 +77,115 @@ function seed_sample_products(int $company_id): array {
     }
 
     return ['products' => $count, 'vouchers' => $voucher_count, 'skipped' => false];
+}
+
+/**
+ * Profiles for the demo tenants. Each one ends up as a fully-formed
+ * company with its own branding, branch, products and vouchers.
+ */
+function sample_company_profiles(): array {
+    return [
+        [
+            'name'      => 'Ladore Furniture',
+            'slug'      => 'ladore',
+            'theme'     => '#1e3a8a',  // navy
+            'theme_2'   => '#f59e0b',  // amber
+            'tagline'   => 'Modern furniture for modern living.',
+            'meta_desc' => 'Ladore Furniture — modern sofas, beds, dining sets and office pieces designed for contemporary Malaysian homes.',
+            'phone'     => '+603-1234 5678',
+            'email'     => 'hello@ladore.my',
+            'whatsapp'  => '60123456789',
+            'hours'     => 'Mon–Sun, 10:00 – 21:00',
+            'admin'     => ['name' => 'Ladore Owner', 'email' => 'owner@ladore.my', 'pass' => 'Owner@12345'],
+            'branch'    => [
+                'name'    => 'Ladore Damansara Showroom',
+                'address' => 'No. 22, Jalan SS 21/35, Damansara Utama, 47400 Petaling Jaya, Selangor',
+                'phone'   => '+603-7732 8800',
+                'hours'   => 'Daily 10am – 9pm',
+            ],
+        ],
+        [
+            'name'      => 'Suifour Living',
+            'slug'      => 'suifour',
+            'theme'     => '#0f766e',  // teal
+            'theme_2'   => '#fbbf24',  // gold
+            'tagline'   => 'Premium living spaces, crafted for every home.',
+            'meta_desc' => 'Suifour Living — premium sofas, bedrooms, dining and workspace furniture with handcrafted detail and free delivery.',
+            'phone'     => '+603-2222 3344',
+            'email'     => 'info@suifour.my',
+            'whatsapp'  => '60181234567',
+            'hours'     => 'Mon–Sat, 11:00 – 20:00',
+            'admin'     => ['name' => 'Suifour Owner', 'email' => 'owner@suifour.my', 'pass' => 'Owner@12345'],
+            'branch'    => [
+                'name'    => 'Suifour KL Flagship',
+                'address' => 'Lot G-12, The Gardens Mall, Mid Valley City, Lingkaran Syed Putra, 59200 Kuala Lumpur',
+                'phone'   => '+603-2287 5599',
+                'hours'   => 'Mon–Sat 11am – 8pm',
+            ],
+        ],
+    ];
+}
+
+/**
+ * Idempotently create a sample company with admin + branch + catalog +
+ * vouchers. Returns a per-step report.
+ */
+function seed_sample_company(array $profile, int $cost = 10): array {
+    $report = ['name' => $profile['name'], 'created' => false, 'products' => 0, 'vouchers' => 0];
+
+    $existing = db_one('SELECT id FROM companies WHERE slug = ?', [$profile['slug']]);
+    if ($existing) {
+        $cid = (int) $existing['id'];
+    } else {
+        $cid = db_insert(
+            'INSERT INTO companies
+               (name, slug, subdomain, theme_color, theme_secondary_color,
+                description, phone, email, whatsapp_number, operating_hours,
+                meta_title, meta_description, status)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "active")',
+            [
+                $profile['name'], $profile['slug'], $profile['slug'],
+                $profile['theme'], $profile['theme_2'],
+                $profile['tagline'], $profile['phone'], $profile['email'],
+                $profile['whatsapp'], $profile['hours'],
+                $profile['name'] . ' — ' . $profile['tagline'],
+                $profile['meta_desc'],
+            ]
+        );
+        $report['created'] = true;
+    }
+
+    // Company admin (idempotent on email)
+    if (!db_one('SELECT id FROM company_admins WHERE email = ?', [$profile['admin']['email']])) {
+        db_insert(
+            'INSERT INTO company_admins (company_id, name, email, password_hash, role)
+             VALUES (?, ?, ?, ?, "owner")',
+            [
+                $cid, $profile['admin']['name'], $profile['admin']['email'],
+                password_hash($profile['admin']['pass'], PASSWORD_BCRYPT, ['cost' => $cost]),
+            ]
+        );
+    }
+
+    // Branch (idempotent on name)
+    if (!db_one('SELECT id FROM branches WHERE company_id = ? AND name = ?',
+                [$cid, $profile['branch']['name']])) {
+        db_insert(
+            'INSERT INTO branches (company_id, name, address, phone, operating_hours, status)
+             VALUES (?, ?, ?, ?, ?, "active")',
+            [
+                $cid, $profile['branch']['name'], $profile['branch']['address'],
+                $profile['branch']['phone'], $profile['branch']['hours'],
+            ]
+        );
+    }
+
+    // Products + vouchers
+    $r = seed_sample_products($cid);
+    $report['products'] = $r['products'];
+    $report['vouchers'] = $r['vouchers'];
+    $report['cid']      = $cid;
+    return $report;
 }
 
 /**

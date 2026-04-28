@@ -47,21 +47,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $name = trim((string) input('name'));
     $slug = slugify((string) (input('slug') ?: $name));
     $f = [
-        'name'         => $name,
-        'slug'         => $slug,
-        'category'     => trim((string) input('category', '')),
-        'subcategory'  => trim((string) input('subcategory', '')),
-        'description'  => (string) input('description', ''),
-        'price_min'    => input('price_min') !== '' ? (float) input('price_min') : null,
-        'price_max'    => input('price_max') !== '' ? (float) input('price_max') : null,
-        'stock_status' => in_array(input('stock_status'), ['in_stock','out_of_stock','preorder'], true) ? input('stock_status') : 'in_stock',
-        'status'       => in_array(input('status'), ['active','draft','archived'], true) ? input('status') : 'active',
+        'name'             => $name,
+        'slug'             => $slug,
+        'category'         => trim((string) input('category', '')),
+        'subcategory'      => trim((string) input('subcategory', '')),
+        'description'      => (string) input('description', ''),
+        'price_min'        => input('price_min') !== '' ? (float) input('price_min') : null,
+        'price_max'        => input('price_max') !== '' ? (float) input('price_max') : null,
+        'stock_status'     => in_array(input('stock_status'), ['in_stock','out_of_stock','preorder'], true) ? input('stock_status') : 'in_stock',
+        'is_featured'      => !empty($_POST['is_featured']) ? 1 : 0,
+        'meta_title'       => trim((string) input('meta_title', '')) ?: null,
+        'meta_description' => trim((string) input('meta_description', '')) ?: null,
+        'status'           => in_array(input('status'), ['active','draft','archived'], true) ? input('status') : 'active',
     ];
 
     if ($id) {
         db_exec(
             'UPDATE products SET name=?, slug=?, category=?, subcategory=?, description=?,
-                                 price_min=?, price_max=?, stock_status=?, status=?
+                                 price_min=?, price_max=?, stock_status=?, is_featured=?,
+                                 meta_title=?, meta_description=?, status=?
               WHERE company_id=? AND id=?',
             [...array_values($f), $CID, $id]
         );
@@ -74,8 +78,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $f['slug'] = $slug;
         $id = db_insert(
             'INSERT INTO products (company_id, name, slug, category, subcategory, description,
-                                   price_min, price_max, stock_status, status)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                                   price_min, price_max, stock_status, is_featured,
+                                   meta_title, meta_description, status)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
             [$CID, ...array_values($f)]
         );
     }
@@ -161,12 +166,31 @@ ca_open($product ? 'Edit Product' : 'Add Product');
           <?php endforeach; ?>
         </select>
       </div>
+      <div class="col"><label>Featured</label>
+        <label style="display:flex;align-items:center;gap:8px;padding:9px 0;font-weight:500;">
+          <input type="checkbox" name="is_featured" value="1" <?= !empty($product['is_featured']) ? 'checked' : '' ?>>
+          ⭐ Show on homepage
+        </label>
+      </div>
     </div>
     <label>Description</label>
     <textarea class="input" name="description" rows="4"><?= e($product['description'] ?? '') ?></textarea>
     <label>Add images (multiple)</label>
     <input type="file" name="images[]" multiple accept="image/*">
-    <p><button class="btn primary">Save</button>
+
+    <div style="margin-top:18px;border-top:1px solid #e5e7eb;padding-top:14px;">
+      <h4 style="margin:0 0 4px;">SEO meta tags</h4>
+      <p class="muted" style="margin:0 0 8px;">Used by search engines and link previews. Leave blank to auto-fill from name + description.</p>
+      <label>Meta Title <span class="muted">(max ~60 chars)</span></label>
+      <input class="input" name="meta_title" maxlength="255"
+             placeholder="<?= e(($product['name'] ?? 'Product Name')) ?>"
+             value="<?= e($product['meta_title'] ?? '') ?>">
+      <label>Meta Description <span class="muted">(max ~160 chars)</span></label>
+      <textarea class="input" name="meta_description" rows="2" maxlength="500"
+                placeholder="Short description that appears in Google results and on social shares."><?= e($product['meta_description'] ?? '') ?></textarea>
+    </div>
+
+    <p style="margin-top:14px"><button class="btn primary">Save</button>
        <a class="btn outline" href="/company-admin/products.php">Back</a></p>
   </form>
 </div>

@@ -36,7 +36,12 @@ ca_open('Products');
     <?php foreach ($products as $p): ?>
       <tr>
         <td><?php if ($p['img']): ?><img src="<?= e($p['img']) ?>" style="height:46px;width:46px;object-fit:cover;border-radius:4px"><?php endif; ?></td>
-        <td><?= e($p['name']) ?></td>
+        <td>
+          <?php if (!empty($p['is_featured'])): ?>
+            <span title="Featured" style="color:#f59e0b;font-size:14px;">⭐</span>
+          <?php endif; ?>
+          <?= e($p['name']) ?>
+        </td>
         <td><?= e($p['category']) ?></td>
         <td><?= e($p['subcategory'] ?? '') ?></td>
         <td><?= e(format_price($p['price_min'], $p['price_max'])) ?></td>

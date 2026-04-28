@@ -29,9 +29,15 @@ try {
 
     // ----- Idempotent column adds (run safely on existing DBs) -----
     $columns_to_add = [
-        ['branches', 'google_map_link', "VARCHAR(500) DEFAULT NULL AFTER google_map_embed"],
-        ['branches', 'waze_link',       "VARCHAR(500) DEFAULT NULL AFTER google_map_link"],
-        ['products', 'subcategory',     "VARCHAR(120) DEFAULT NULL AFTER category"],
+        ['branches',  'google_map_link',  "VARCHAR(500) DEFAULT NULL AFTER google_map_embed"],
+        ['branches',  'waze_link',        "VARCHAR(500) DEFAULT NULL AFTER google_map_link"],
+        ['products',  'subcategory',      "VARCHAR(120) DEFAULT NULL AFTER category"],
+        ['products',  'is_featured',      "TINYINT(1) NOT NULL DEFAULT 0 AFTER stock_status"],
+        ['products',  'meta_title',       "VARCHAR(255) DEFAULT NULL AFTER is_featured"],
+        ['products',  'meta_description', "TEXT AFTER meta_title"],
+        ['companies', 'meta_title',       "VARCHAR(255) DEFAULT NULL AFTER operating_hours"],
+        ['companies', 'meta_description', "TEXT AFTER meta_title"],
+        ['companies', 'og_image',         "VARCHAR(255) DEFAULT NULL AFTER meta_description"],
     ];
     foreach ($columns_to_add as [$tbl, $col, $type]) {
         $exists = db_one(
@@ -58,42 +64,19 @@ try {
         append($msgs, "• Super admin already exists ({$superEmail}).");
     }
 
-    // Seed sample company
-    $sampleSlug = 'ladore';
-    if (!db_one('SELECT id FROM companies WHERE slug = ?', [$sampleSlug])) {
-        $cid = db_insert(
-            'INSERT INTO companies (name, slug, subdomain, theme_color, theme_secondary_color,
-                                    description, whatsapp_number, status)
-             VALUES (?, ?, ?, ?, ?, ?, ?, "active")',
-            [
-                'Ladore Furniture', $sampleSlug, $sampleSlug,
-                '#1e3a8a', '#f59e0b',
-                'Modern furniture for modern living.', '60123456789',
-            ]
-        );
-        append($msgs, '✓ Sample company created: ladore.' . APP_BASE_DOMAIN . " (id={$cid})");
-
-        $caEmail = 'owner@ladore.my';
-        $caPass  = 'Owner@12345';
-        db_insert(
-            'INSERT INTO company_admins (company_id, name, email, password_hash, role)
-             VALUES (?, ?, ?, ?, "owner")',
-            [$cid, 'Ladore Owner', $caEmail, password_hash($caPass, PASSWORD_BCRYPT, ['cost' => PASSWORD_COST])]
-        );
-        append($msgs, "✓ Company admin created: {$caEmail} / {$caPass}");
-    } else {
-        append($msgs, '• Sample company already exists.');
-    }
-
-    // Seed furniture catalog for the sample tenant (idempotent)
+    // ----- Seed two sample tenants (idempotent) -----
     require_once __DIR__ . '/inc/seed.php';
-    $sampleRow = db_one('SELECT id FROM companies WHERE slug = ?', [$sampleSlug]);
-    if ($sampleRow) {
-        $r = seed_sample_products((int) $sampleRow['id']);
-        if (!empty($r['skipped'])) {
-            append($msgs, '• Sample products already present, skipped seeding.');
+    foreach (sample_company_profiles() as $profile) {
+        $r = seed_sample_company($profile, PASSWORD_COST);
+        $base = APP_BASE_DOMAIN;
+        if ($r['created']) {
+            append($msgs, "✓ Sample company created: {$profile['name']} ({$profile['slug']}.{$base})");
+            append($msgs, "  ↳ admin: {$profile['admin']['email']} / {$profile['admin']['pass']}");
         } else {
-            append($msgs, "✓ Seeded {$r['products']} furniture products + {$r['vouchers']} vouchers.");
+            append($msgs, "• Sample company already exists: {$profile['name']}");
+        }
+        if ($r['products'] > 0) {
+            append($msgs, "  ↳ seeded {$r['products']} products + {$r['vouchers']} vouchers");
         }
     }
 

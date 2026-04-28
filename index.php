@@ -98,12 +98,13 @@ h2 { font-size: 20px; margin: 40px 0 16px; }
 $cid = (int) $company['id'];
 track_event($cid, 'page_view', ['entity_type' => 'home']);
 
+// Featured products first; if fewer than 8, fall back to newest non-featured.
 $products = tenant_all(
     'SELECT p.*, (SELECT image_path FROM product_images
                   WHERE product_id = p.id ORDER BY is_primary DESC, sort_order ASC LIMIT 1) AS img
        FROM products p
       WHERE p.company_id = ? AND p.status = "active"
-      ORDER BY p.created_at DESC
+      ORDER BY p.is_featured DESC, p.created_at DESC
       LIMIT 8',
     $cid
 );

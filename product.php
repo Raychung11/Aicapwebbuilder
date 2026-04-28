@@ -50,7 +50,15 @@ $wa_link = !empty($company['whatsapp_number'])
     ? '/whatsapp-redirect.php?product_id=' . (int)$product['id']
     : null;
 
-layout_head($company, $product['name']);
+$page_meta = [
+    'title'       => $product['meta_title'] ?: ($product['name'] . ' | ' . $company['name']),
+    'description' => $product['meta_description']
+        ?: mb_substr(strip_tags((string) ($product['description'] ?? '')), 0, 160),
+    'image'       => $images[0]['image_path'] ?? ($company['og_image'] ?? ($company['logo'] ?? '')),
+    'type'        => 'product',
+];
+
+layout_head($company, $product['name'], 'product', $page_meta);
 ?>
 <section>
   <div class="container split">

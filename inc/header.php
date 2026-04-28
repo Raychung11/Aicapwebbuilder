@@ -11,10 +11,28 @@ require_once __DIR__ . '/helpers.php';
 
 $page_title = $page_title ?? '';
 $page_id    = $page_id    ?? '';
+$page_meta  = $page_meta  ?? [];   // optional: title, description, image, type
 
-$_title     = $page_title
-    ? e($page_title) . ' | ' . e($company['name'])
-    : e($company['name']);
+// Resolve final SEO values with sensible fallbacks.
+$_company_meta_title = $company['meta_title']       ?? '';
+$_company_meta_desc  = $company['meta_description'] ?? ($company['description'] ?? '');
+$_og_image_default   = $company['og_image'] ?: ($company['logo'] ?? '');
+
+$_seo_title = $page_meta['title']
+    ?? ($page_title ? $page_title . ' | ' . $company['name']
+                    : ($_company_meta_title ?: $company['name']));
+$_seo_desc  = $page_meta['description'] ?? $_company_meta_desc;
+$_seo_image = $page_meta['image']       ?? $_og_image_default;
+$_seo_type  = $page_meta['type']        ?? 'website';
+
+// Absolute URLs for Open Graph
+$_scheme    = ($_SERVER['HTTPS'] ?? 'off') !== 'off' ? 'https' : 'http';
+$_host      = $_SERVER['HTTP_HOST'] ?? '';
+$_seo_url   = $_scheme . '://' . $_host . ($_SERVER['REQUEST_URI'] ?? '/');
+if ($_seo_image && !preg_match('#^https?://#', $_seo_image)) {
+    $_seo_image = $_scheme . '://' . $_host . $_seo_image;
+}
+
 $_primary   = e($company['theme_color']           ?: '#111827');
 $_secondary = e($company['theme_secondary_color'] ?: '#f59e0b');
 ?><!doctype html>
@@ -23,8 +41,25 @@ $_secondary = e($company['theme_secondary_color'] ?: '#f59e0b');
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="<?= $_primary ?>">
-<title><?= $_title ?></title>
-<meta name="description" content="<?= e($company['description'] ?? '') ?>">
+<title><?= e($_seo_title) ?></title>
+<meta name="description" content="<?= e($_seo_desc) ?>">
+<link rel="canonical" href="<?= e($_seo_url) ?>">
+
+<!-- Open Graph -->
+<meta property="og:site_name" content="<?= e($company['name']) ?>">
+<meta property="og:title" content="<?= e($_seo_title) ?>">
+<meta property="og:description" content="<?= e($_seo_desc) ?>">
+<meta property="og:url" content="<?= e($_seo_url) ?>">
+<meta property="og:type" content="<?= e($_seo_type) ?>">
+<?php if ($_seo_image): ?>
+<meta property="og:image" content="<?= e($_seo_image) ?>">
+<?php endif; ?>
+
+<!-- Twitter -->
+<meta name="twitter:card" content="<?= $_seo_image ? 'summary_large_image' : 'summary' ?>">
+<meta name="twitter:title" content="<?= e($_seo_title) ?>">
+<meta name="twitter:description" content="<?= e($_seo_desc) ?>">
+<?php if ($_seo_image): ?><meta name="twitter:image" content="<?= e($_seo_image) ?>"><?php endif; ?>
 <style>
 :root { --c-primary: <?= $_primary ?>; --c-secondary: <?= $_secondary ?>; }
 * { box-sizing: border-box; }

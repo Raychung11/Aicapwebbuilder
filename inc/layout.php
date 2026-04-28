@@ -12,7 +12,7 @@
  */
 require_once __DIR__ . '/helpers.php';
 
-function layout_head(array $company, string $page_title = '', string $page_id = ''): void {
+function layout_head(array $company, string $page_title = '', string $page_id = '', array $page_meta = []): void {
     require __DIR__ . '/header.php';
 }
 
