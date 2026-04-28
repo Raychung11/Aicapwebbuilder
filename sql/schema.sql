@@ -384,6 +384,27 @@ CREATE TABLE IF NOT EXISTS page_templates (
   UNIQUE KEY uniq_tpl_key (template_key)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- ---------------------------------------------------------------------
+-- partner_inquiries  (subscribe / partner / licensing leads from aicap.my)
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS partner_inquiries (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  type ENUM('subscribe','partner','licensing','general') NOT NULL DEFAULT 'subscribe',
+  company_name VARCHAR(150) NOT NULL,
+  contact_name VARCHAR(150) NOT NULL,
+  email VARCHAR(190) NOT NULL,
+  phone VARCHAR(40) DEFAULT NULL,
+  brand_name VARCHAR(150) DEFAULT NULL,
+  branches_count VARCHAR(40) DEFAULT NULL,
+  message TEXT,
+  status ENUM('new','contacted','converted','closed') NOT NULL DEFAULT 'new',
+  ip_address VARCHAR(45) DEFAULT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_inq_status (status),
+  KEY idx_inq_type (type)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- Run install.php once after importing this schema to seed the

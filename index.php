@@ -1,96 +1,14 @@
 <?php
 require_once __DIR__ . '/inc/tenant.php';
 require_once __DIR__ . '/inc/auth.php';
+require_once __DIR__ . '/inc/csrf.php';
 require_once __DIR__ . '/inc/helpers.php';
 require_once __DIR__ . '/inc/analytics.php';
 
 $company = current_company();
 
 if (!$company) {
-    // ===== HQ landing =====
-    $companies = db_all('SELECT id, name, slug, subdomain, logo, theme_color
-                           FROM companies WHERE status = "active" ORDER BY name');
-    $on_platform = (($_SERVER['HTTP_HOST'] ?? '') === APP_BASE_DOMAIN
-                  || ($_SERVER['HTTP_HOST'] ?? '') === 'www.' . APP_BASE_DOMAIN);
-    ?><!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title><?= e(APP_NAME) ?></title>
-<style>
-body { margin:0; font-family: -apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial,sans-serif; background:#0f172a; color:#fff; }
-.wrap { max-width: 980px; margin: 0 auto; padding: clamp(40px,10vw,80px) 20px; }
-.hero { text-align:center; }
-h1 { font-size: clamp(30px,6vw,46px); margin: 0 0 16px; }
-.lead { color:#94a3b8; font-size: clamp(15px,2vw,18px); }
-.btn { display:inline-flex; align-items:center; gap:6px; margin: 6px; padding: 12px 22px; border-radius:8px; background:#f59e0b; color:#111; font-weight:700; text-decoration:none; min-height:44px; }
-.btn.outline { background:transparent; border:1px solid #334155; color:#fff; }
-h2 { font-size: 20px; margin: 40px 0 16px; }
-.tenants { display:grid; gap:14px; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
-.tenant { background:#1e293b; border-radius:10px; padding: 16px; display:flex; flex-direction:column; gap:8px; }
-.tenant .head { display:flex; align-items:center; gap:10px; }
-.tenant .head img { width:36px; height:36px; object-fit:contain; background:#fff; border-radius:6px; padding:3px; }
-.tenant .head strong { color:#fff; }
-.tenant .actions { display:flex; gap:6px; flex-wrap:wrap; margin-top:auto; }
-.tenant .actions a { font-size: 13px; padding: 7px 12px; border-radius:6px; text-decoration:none; }
-.tenant .a-prev { background:#2563eb; color:#fff; }
-.tenant .a-open { background:transparent; border:1px solid #334155; color:#cbd5e1; }
-.note { background:#1e293b; border-left:3px solid #f59e0b; padding:14px 16px; border-radius:6px; margin: 24px 0; font-size:14px; color:#cbd5e1; }
-.note code { background:#0f172a; padding:2px 6px; border-radius:4px; color:#f59e0b; }
-</style>
-</head>
-<body>
-<div class="wrap">
-  <div class="hero">
-    <h1>AICAP Furniture BOS</h1>
-    <p class="lead">Multi-tenant SaaS for furniture brands.<br>
-       Each licensed company gets its own subdomain, catalog, vouchers and analytics.</p>
-    <p>
-      <a class="btn" href="/admin/login.php">Super Admin Login</a>
-      <a class="btn outline" href="/company-admin/login.php">Company Admin Login</a>
-    </p>
-  </div>
-
-  <?php if (!$on_platform): ?>
-    <div class="note">
-      You're on a preview URL. Subdomain routing only takes over once DNS for
-      <code><?= e(APP_BASE_DOMAIN) ?></code> points to this server.
-      Until then, click <strong>Preview</strong> below to browse a tenant.
-    </div>
-  <?php endif; ?>
-
-  <?php if ($companies): ?>
-    <h2>Tenants <span style="color:#94a3b8;font-weight:normal">(<?= count($companies) ?>)</span></h2>
-    <div class="tenants">
-      <?php foreach ($companies as $co): ?>
-        <div class="tenant" style="border-top: 3px solid <?= e($co['theme_color'] ?: '#334155') ?>;">
-          <div class="head">
-            <?php if (!empty($co['logo'])): ?>
-              <img src="<?= e($co['logo']) ?>" alt="">
-            <?php else: ?>
-              <div style="width:36px;height:36px;background:#334155;border-radius:6px;display:flex;align-items:center;justify-content:center;font-weight:700;">
-                <?= e(strtoupper(substr($co['name'], 0, 1))) ?>
-              </div>
-            <?php endif; ?>
-            <strong><?= e($co['name']) ?></strong>
-          </div>
-          <div style="color:#94a3b8;font-size:13px;">
-            <?= e($co['subdomain']) ?>.<?= e(APP_BASE_DOMAIN) ?>
-          </div>
-          <div class="actions">
-            <a class="a-prev" href="/?as=<?= e($co['slug']) ?>">Preview here</a>
-            <?php if ($on_platform): ?>
-              <a class="a-open" href="<?= e(company_url($co)) ?>">Open subdomain ↗</a>
-            <?php endif; ?>
-          </div>
-        </div>
-      <?php endforeach; ?>
-    </div>
-  <?php endif; ?>
-</div>
-</body></html>
-<?php
+    require __DIR__ . '/inc/corporate.php';
     exit;
 }
 
