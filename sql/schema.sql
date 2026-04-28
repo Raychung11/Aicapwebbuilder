@@ -130,6 +130,7 @@ CREATE TABLE IF NOT EXISTS products (
   name VARCHAR(190) NOT NULL,
   slug VARCHAR(190) NOT NULL,
   category VARCHAR(120) DEFAULT NULL,
+  subcategory VARCHAR(120) DEFAULT NULL,
   description TEXT,
   price_min DECIMAL(12,2) DEFAULT NULL,
   price_max DECIMAL(12,2) DEFAULT NULL,
@@ -139,7 +140,8 @@ CREATE TABLE IF NOT EXISTS products (
   PRIMARY KEY (id),
   UNIQUE KEY uniq_company_slug (company_id, slug),
   KEY idx_prod_company (company_id),
-  KEY idx_prod_category (company_id, category)
+  KEY idx_prod_category (company_id, category),
+  KEY idx_prod_subcategory (company_id, category, subcategory)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ---------------------------------------------------------------------

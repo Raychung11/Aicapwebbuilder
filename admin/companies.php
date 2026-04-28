@@ -16,6 +16,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'toggle') {
     redirect('/admin/companies.php');
 }
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'seed') {
+    csrf_check();
+    require_once __DIR__ . '/../inc/seed.php';
+    $id = (int) input('id', 0);
+    $exists = db_one('SELECT id FROM companies WHERE id = ?', [$id]);
+    if ($exists) {
+        $r = seed_sample_products($id);
+        if (!empty($r['skipped'])) {
+            flash_set('error', 'This company already has products. Seed skipped.');
+        } else {
+            flash_set('success', "Seeded {$r['products']} sample products and {$r['vouchers']} vouchers.");
+        }
+    }
+    redirect('/admin/companies.php');
+}
+
 $companies = db_all('SELECT * FROM companies ORDER BY created_at DESC');
 
 admin_layout_open('Companies');
@@ -46,6 +62,12 @@ admin_layout_open('Companies');
             <button class="btn outline" type="submit">
               <?= $c['status']==='active' ? 'Suspend' : 'Activate' ?>
             </button>
+          </form>
+          <form method="post" style="display:inline" onsubmit="return confirm('Seed 16 sample furniture products + 2 vouchers for this company? Skipped if it already has products.')">
+            <?= csrf_field() ?>
+            <input type="hidden" name="action" value="seed">
+            <input type="hidden" name="id" value="<?= (int)$c['id'] ?>">
+            <button class="btn outline" type="submit" title="Seed sample furniture catalog">🪑 Seed</button>
           </form>
         </td>
       </tr>

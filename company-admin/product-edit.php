@@ -49,7 +49,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $f = [
         'name'         => $name,
         'slug'         => $slug,
-        'category'     => (string) input('category', ''),
+        'category'     => trim((string) input('category', '')),
+        'subcategory'  => trim((string) input('subcategory', '')),
         'description'  => (string) input('description', ''),
         'price_min'    => input('price_min') !== '' ? (float) input('price_min') : null,
         'price_max'    => input('price_max') !== '' ? (float) input('price_max') : null,
@@ -59,8 +60,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($id) {
         db_exec(
-            'UPDATE products SET name=?, slug=?, category=?, description=?, price_min=?, price_max=?,
-                                 stock_status=?, status=?
+            'UPDATE products SET name=?, slug=?, category=?, subcategory=?, description=?,
+                                 price_min=?, price_max=?, stock_status=?, status=?
               WHERE company_id=? AND id=?',
             [...array_values($f), $CID, $id]
         );
@@ -72,8 +73,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         $f['slug'] = $slug;
         $id = db_insert(
-            'INSERT INTO products (company_id, name, slug, category, description, price_min, price_max, stock_status, status)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            'INSERT INTO products (company_id, name, slug, category, subcategory, description,
+                                   price_min, price_max, stock_status, status)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
             [$CID, ...array_values($f)]
         );
     }
@@ -123,8 +125,25 @@ ca_open($product ? 'Edit Product' : 'Add Product');
     <div class="row">
       <div class="col"><label>Name</label><input class="input" name="name" required value="<?= e($product['name'] ?? '') ?>"></div>
       <div class="col"><label>Slug</label><input class="input" name="slug" value="<?= e($product['slug'] ?? '') ?>"></div>
-      <div class="col"><label>Category</label><input class="input" name="category" value="<?= e($product['category'] ?? '') ?>"></div>
     </div>
+    <div class="row">
+      <div class="col"><label>Category <span class="muted">(top-level, e.g. Living Room)</span></label>
+        <input class="input" name="category" list="cat-options" value="<?= e($product['category'] ?? '') ?>">
+      </div>
+      <div class="col"><label>Subcategory <span class="muted">(e.g. Sofa, Coffee Table)</span></label>
+        <input class="input" name="subcategory" list="subcat-options" value="<?= e($product['subcategory'] ?? '') ?>">
+      </div>
+    </div>
+    <?php
+      $cats    = tenant_all('SELECT DISTINCT category FROM products WHERE company_id = ? AND category IS NOT NULL AND category != "" ORDER BY category', $CID);
+      $subcats = tenant_all('SELECT DISTINCT subcategory FROM products WHERE company_id = ? AND subcategory IS NOT NULL AND subcategory != "" ORDER BY subcategory', $CID);
+    ?>
+    <datalist id="cat-options">
+      <?php foreach ($cats as $c):    ?><option value="<?= e($c['category']) ?>"><?php endforeach; ?>
+    </datalist>
+    <datalist id="subcat-options">
+      <?php foreach ($subcats as $s): ?><option value="<?= e($s['subcategory']) ?>"><?php endforeach; ?>
+    </datalist>
     <div class="row">
       <div class="col"><label>Price Min</label><input class="input" name="price_min" type="number" step="0.01" value="<?= e($product['price_min'] ?? '') ?>"></div>
       <div class="col"><label>Price Max</label><input class="input" name="price_max" type="number" step="0.01" value="<?= e($product['price_max'] ?? '') ?>"></div>

@@ -31,6 +31,7 @@ try {
     $columns_to_add = [
         ['branches', 'google_map_link', "VARCHAR(500) DEFAULT NULL AFTER google_map_embed"],
         ['branches', 'waze_link',       "VARCHAR(500) DEFAULT NULL AFTER google_map_link"],
+        ['products', 'subcategory',     "VARCHAR(120) DEFAULT NULL AFTER category"],
     ];
     foreach ($columns_to_add as [$tbl, $col, $type]) {
         $exists = db_one(
@@ -82,6 +83,18 @@ try {
         append($msgs, "✓ Company admin created: {$caEmail} / {$caPass}");
     } else {
         append($msgs, '• Sample company already exists.');
+    }
+
+    // Seed furniture catalog for the sample tenant (idempotent)
+    require_once __DIR__ . '/inc/seed.php';
+    $sampleRow = db_one('SELECT id FROM companies WHERE slug = ?', [$sampleSlug]);
+    if ($sampleRow) {
+        $r = seed_sample_products((int) $sampleRow['id']);
+        if (!empty($r['skipped'])) {
+            append($msgs, '• Sample products already present, skipped seeding.');
+        } else {
+            append($msgs, "✓ Seeded {$r['products']} furniture products + {$r['vouchers']} vouchers.");
+        }
     }
 
     // Make sure /uploads is writable

@@ -32,12 +32,13 @@ ca_open('Products');
 </div>
 <div class="card">
   <table>
-    <tr><th>Image</th><th>Name</th><th>Category</th><th>Price</th><th>Status</th><th></th></tr>
+    <tr><th>Image</th><th>Name</th><th>Category</th><th>Subcategory</th><th>Price</th><th>Status</th><th></th></tr>
     <?php foreach ($products as $p): ?>
       <tr>
         <td><?php if ($p['img']): ?><img src="<?= e($p['img']) ?>" style="height:46px;width:46px;object-fit:cover;border-radius:4px"><?php endif; ?></td>
         <td><?= e($p['name']) ?></td>
         <td><?= e($p['category']) ?></td>
+        <td><?= e($p['subcategory'] ?? '') ?></td>
         <td><?= e(format_price($p['price_min'], $p['price_max'])) ?></td>
         <td><span class="badge <?= $p['status']==='active'?'green':'' ?>"><?= e($p['status']) ?></span></td>
         <td class="actions">
