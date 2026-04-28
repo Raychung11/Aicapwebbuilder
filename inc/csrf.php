@@ -1,8 +1,14 @@
 <?php
 require_once __DIR__ . '/auth.php';
 
+// Boot the session at include time — never inside csrf_field(). Pages
+// often call csrf_field() deep inside the HTML body, by which point
+// the output buffer has flushed and session_start() can no longer set
+// cookies. Including this file early (which every CSRF-protected page
+// already does) guarantees the session exists before any output.
+session_boot();
+
 function csrf_token(): string {
-    session_boot();
     if (empty($_SESSION[CSRF_TOKEN_KEY])) {
         $_SESSION[CSRF_TOKEN_KEY] = bin2hex(random_bytes(32));
     }
