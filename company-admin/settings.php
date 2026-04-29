@@ -51,6 +51,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirect('/company-admin/settings.php');
     }
 
+    if ($form === 'banner') {
+        if (!empty($_FILES['banner_image']['name'])) {
+            $url = save_upload($_FILES['banner_image'], $CID, 'banner');
+            if ($url) {
+                db_exec('UPDATE companies SET banner_image = ? WHERE id = ?', [$url, $CID]);
+            } else {
+                flash_set('error', 'Could not save the banner image. Use a JPG/PNG/WEBP up to 5 MB.');
+                redirect('/company-admin/settings.php');
+            }
+        }
+        $b = [
+            'banner_title'    => trim((string) input('banner_title', '')) ?: null,
+            'banner_subtitle' => trim((string) input('banner_subtitle', '')) ?: null,
+            'banner_cta_text' => trim((string) input('banner_cta_text', '')) ?: null,
+            'banner_cta_url'  => trim((string) input('banner_cta_url', '')) ?: null,
+        ];
+        db_exec(
+            'UPDATE companies SET banner_title=?, banner_subtitle=?, banner_cta_text=?, banner_cta_url=? WHERE id=?',
+            [...array_values($b), $CID]
+        );
+        flash_set('success', 'Marketing banner saved.');
+        redirect('/company-admin/settings.php');
+    }
+
+    if ($form === 'remove_banner_image') {
+        db_exec('UPDATE companies SET banner_image = NULL WHERE id = ?', [$CID]);
+        flash_set('success', 'Banner image removed.');
+        redirect('/company-admin/settings.php');
+    }
+
     // Default: save the rest of the branding/contact settings.
     $fields = [
         'name'                  => trim((string) input('name')),
@@ -116,6 +146,66 @@ ca_open('Branding & Settings');
       <?php endif; ?>
     </form>
   </div>
+</div>
+
+<!-- ===== Marketing banner ===== -->
+<div class="card">
+  <h3 style="margin:0 0 4px;">Marketing Banner</h3>
+  <p class="muted" style="margin:0 0 14px;">Hero banner shown at the top of your homepage. Each field is optional — leave blank to use sensible defaults (company name, description, "Browse Catalog" button).</p>
+
+  <form method="post" enctype="multipart/form-data">
+    <?= csrf_field() ?>
+    <input type="hidden" name="form" value="banner">
+
+    <div class="row" style="align-items:flex-start;">
+      <div class="col" style="flex:0 0 220px;">
+        <label>Banner image</label>
+        <div style="width:200px;height:120px;border:2px dashed #d1d5db;border-radius:10px;display:flex;align-items:center;justify-content:center;background:#f9fafb;overflow:hidden;">
+          <?php if (!empty($company['banner_image'])): ?>
+            <img src="<?= e($company['banner_image']) ?>" alt="" style="width:100%;height:100%;object-fit:cover;">
+          <?php else: ?>
+            <span class="muted" style="font-size:12px;text-align:center;padding:8px;">No banner uploaded</span>
+          <?php endif; ?>
+        </div>
+        <input type="file" name="banner_image" accept="image/*" style="margin-top:8px;font-size:13px;">
+        <p class="muted" style="margin-top:6px;font-size:12px;">Recommended 1600 × 600 px landscape. JPG/PNG/WEBP up to 5 MB. A dark overlay is added automatically for text contrast.</p>
+        <?php if (!empty($company['banner_image'])): ?>
+          <button class="btn outline" type="submit" style="margin-top:6px;font-size:12px;padding:5px 10px;"
+                  onclick="this.form.elements['form'].value='remove_banner_image';return confirm('Remove banner image?');">
+            Remove banner
+          </button>
+        <?php endif; ?>
+      </div>
+      <div class="col">
+        <label>Banner title <span class="muted">(falls back to company name)</span></label>
+        <input class="input" name="banner_title" maxlength="255"
+               placeholder="<?= e($company['name']) ?>"
+               value="<?= e($company['banner_title'] ?? '') ?>">
+
+        <label>Banner subtitle <span class="muted">(falls back to description)</span></label>
+        <textarea class="input" name="banner_subtitle" rows="2" maxlength="500"
+                  placeholder="<?= e(mb_substr($company['description'] ?? '', 0, 140)) ?>"><?= e($company['banner_subtitle'] ?? '') ?></textarea>
+
+        <div class="row">
+          <div class="col">
+            <label>CTA button text</label>
+            <input class="input" name="banner_cta_text" maxlength="120"
+                   placeholder="Browse Catalog"
+                   value="<?= e($company['banner_cta_text'] ?? '') ?>">
+          </div>
+          <div class="col">
+            <label>CTA button link</label>
+            <input class="input" name="banner_cta_url" maxlength="500"
+                   placeholder="/catalog.php"
+                   value="<?= e($company['banner_cta_url'] ?? '') ?>">
+            <p class="muted" style="margin-top:4px;font-size:12px;">e.g. <code>/catalog.php</code>, <code>/voucher.php</code>, <code>/visit.php</code> or any URL.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p style="margin-top:14px"><button class="btn primary">Save Banner</button></p>
+  </form>
 </div>
 
 <!-- ===== Other settings ===== -->

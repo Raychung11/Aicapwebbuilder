@@ -59,12 +59,22 @@ require __DIR__ . '/inc/header.php';
   </div>
 </nav>
 
-<section id="home" class="hero">
+<?php
+  // Marketing banner with sensible fallbacks
+  $banner_title    = !empty($company['banner_title'])    ? $company['banner_title']    : $company['name'];
+  $banner_subtitle = !empty($company['banner_subtitle']) ? $company['banner_subtitle'] : ($company['description'] ?? '');
+  $banner_cta_text = !empty($company['banner_cta_text']) ? $company['banner_cta_text'] : 'Browse Catalog';
+  $banner_cta_url  = !empty($company['banner_cta_url'])  ? $company['banner_cta_url']  : '/catalog.php';
+  $banner_image    = $company['banner_image'] ?? '';
+  $hero_class      = 'hero' . ($banner_image ? ' has-bg' : '');
+  $hero_style      = $banner_image ? 'background-image:url(\'' . e($banner_image) . '\');' : '';
+?>
+<section id="home" class="<?= $hero_class ?>" style="<?= $hero_style ?>">
   <div class="container">
-    <h1><?= e($company['name']) ?></h1>
-    <p><?= e($company['description'] ?? '') ?></p>
+    <h1><?= e($banner_title) ?></h1>
+    <p><?= e($banner_subtitle) ?></p>
     <div class="btn-row" style="margin-top:18px">
-      <a class="btn primary" href="/catalog.php">Browse Catalog</a>
+      <a class="btn primary" href="<?= e($banner_cta_url) ?>"><?= e($banner_cta_text) ?></a>
       <?php if ($vouchers): ?>
         <a class="btn outline-light" href="#vouchers">Get Vouchers</a>
       <?php endif; ?>

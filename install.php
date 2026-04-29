@@ -38,6 +38,11 @@ try {
         ['companies', 'meta_title',       "VARCHAR(255) DEFAULT NULL AFTER operating_hours"],
         ['companies', 'meta_description', "TEXT AFTER meta_title"],
         ['companies', 'og_image',         "VARCHAR(255) DEFAULT NULL AFTER meta_description"],
+        ['companies', 'banner_image',     "VARCHAR(255) DEFAULT NULL AFTER og_image"],
+        ['companies', 'banner_title',     "VARCHAR(255) DEFAULT NULL AFTER banner_image"],
+        ['companies', 'banner_subtitle',  "TEXT AFTER banner_title"],
+        ['companies', 'banner_cta_text',  "VARCHAR(120) DEFAULT NULL AFTER banner_subtitle"],
+        ['companies', 'banner_cta_url',   "VARCHAR(500) DEFAULT NULL AFTER banner_cta_text"],
     ];
     foreach ($columns_to_add as [$tbl, $col, $type]) {
         $exists = db_one(

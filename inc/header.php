@@ -159,9 +159,22 @@ body.menu-open .nav-toggle .bars::after  { top: 7px; transform: rotate(-45deg); 
   padding: clamp(40px, 8vw, 80px) 0;
   background: linear-gradient(135deg, var(--c-primary), #000);
   color:#fff;
+  position: relative;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 }
-.hero h1 { font-size: clamp(28px, 5.5vw, 44px); margin: 0 0 12px; line-height: 1.15; }
-.hero p  { font-size: clamp(15px, 2.2vw, 18px); opacity: .92; max-width: 640px; }
+.hero.has-bg { padding: clamp(80px, 14vw, 140px) 0; }
+.hero.has-bg::before {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(15,23,42,.65), rgba(0,0,0,.45));
+  pointer-events: none;
+}
+.hero .container { position: relative; z-index: 1; }
+.hero h1 { font-size: clamp(28px, 5.5vw, 44px); margin: 0 0 12px; line-height: 1.15;
+  text-shadow: 0 2px 12px rgba(0,0,0,.25); }
+.hero p  { font-size: clamp(15px, 2.2vw, 18px); opacity: .95; max-width: 640px;
+  text-shadow: 0 1px 8px rgba(0,0,0,.25); }
 
 /* ---------- Sections / cards ---------- */
 section { padding: clamp(28px, 5vw, 48px) 0; scroll-margin-top: 120px; }
