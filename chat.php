@@ -12,6 +12,7 @@ require_once __DIR__ . '/inc/tenant.php';
 require_once __DIR__ . '/inc/auth.php';
 require_once __DIR__ . '/inc/helpers.php';
 require_once __DIR__ . '/inc/analytics.php';
+require_once __DIR__ . '/inc/ai.php';
 
 header('Content-Type: application/json; charset=utf-8');
 header('X-Robots-Tag: noindex');
@@ -51,6 +52,63 @@ if ($message === '') {
 }
 
 track_event($cid, 'chatbot_query', ['entity_type' => 'query']);
+
+// ----- Try Claude first if configured -----
+if (ai_enabled()) {
+    $catalog = tenant_all(
+        'SELECT id, name, category, subcategory, price_min, price_max
+           FROM products WHERE company_id = ? AND status = "active"
+           ORDER BY is_featured DESC, created_at DESC LIMIT 120',
+        $cid
+    );
+    $ai = ai_recommend($catalog, $message, $company['name']);
+    if ($ai !== null) {
+        $rows = [];
+        if (!empty($ai['product_ids'])) {
+            $ids   = array_slice($ai['product_ids'], 0, 6);
+            $place = implode(',', array_fill(0, count($ids), '?'));
+            $rows = db_all(
+                "SELECT p.id, p.name, p.slug, p.category, p.subcategory,
+                        p.price_min, p.price_max, p.is_featured,
+                        (SELECT image_path FROM product_images
+                          WHERE product_id = p.id
+                          ORDER BY is_primary DESC, sort_order ASC LIMIT 1) AS img
+                   FROM products p
+                  WHERE p.company_id = ? AND p.status = 'active' AND p.id IN ({$place})",
+                array_merge([$cid], $ids)
+            );
+            // Preserve Claude's ordering
+            $by_id = [];
+            foreach ($rows as $r) $by_id[(int) $r['id']] = $r;
+            $rows = [];
+            foreach ($ids as $id) {
+                if (isset($by_id[$id])) $rows[] = $by_id[$id];
+            }
+        }
+
+        $products = array_map(function ($p) {
+            return [
+                'id'    => (int) $p['id'],
+                'name'  => $p['name'],
+                'cat'   => trim(($p['category'] ?? '') . ($p['subcategory'] ? ' › ' . $p['subcategory'] : ''), ' ›'),
+                'price' => format_price($p['price_min'], $p['price_max']),
+                'img'   => $p['img'],
+                'url'   => '/product.php?id=' . (int) $p['id'],
+                'wa'    => '/whatsapp-redirect.php?product_id=' . (int) $p['id'],
+                'featured' => (bool) $p['is_featured'],
+            ];
+        }, $rows);
+
+        echo json_encode([
+            'reply'       => $ai['reply'],
+            'products'    => $products,
+            'suggestions' => ['Show me more', 'Under RM 2000', "What's featured?"],
+            'ai'          => true,
+        ]);
+        exit;
+    }
+    // ai_recommend returned null → fall through to rule-based
+}
 
 // ----- Parse the query -----
 $lower = mb_strtolower($message);

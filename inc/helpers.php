@@ -71,3 +71,34 @@ function tenant_one(string $sql, int $company_id, array $params = []): ?array {
 function tenant_all(string $sql, int $company_id, array $params = []): array {
     return db_all($sql, array_merge([$company_id], $params));
 }
+
+/**
+ * Read a platform-level setting (AI keys, etc.) with env-var override.
+ * Returns null if not set.
+ */
+function platform_setting(string $key, ?string $default = null): ?string {
+    static $cache = null;
+    if ($cache === null) {
+        $cache = [];
+        try {
+            foreach (db_all('SELECT setting_key, setting_value FROM platform_settings') as $r) {
+                $cache[$r['setting_key']] = $r['setting_value'];
+            }
+        } catch (Throwable $e) {
+            // Table may not exist yet on a half-migrated install.
+        }
+    }
+    // Env-var override always wins
+    $env = getenv(strtoupper($key));
+    if ($env !== false && $env !== '') return $env;
+    return $cache[$key] ?? $default;
+}
+
+function set_platform_setting(string $key, ?string $value): void {
+    db_exec(
+        'INSERT INTO platform_settings (setting_key, setting_value)
+         VALUES (?, ?)
+         ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)',
+        [$key, $value]
+    );
+}

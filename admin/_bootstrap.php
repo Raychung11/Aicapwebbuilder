@@ -7,10 +7,11 @@ require_once __DIR__ . '/../inc/admin_layout.php';
 $super = require_super_admin();
 
 $ADMIN_MENU = [
-    ['file' => 'index.php',     'label' => 'Dashboard',      'icon' => '🏠'],
-    ['file' => 'companies.php', 'label' => 'Companies',      'icon' => '🏢'],
-    ['file' => 'templates.php', 'label' => 'Page Templates', 'icon' => '📐'],
-    ['file' => 'analytics.php', 'label' => 'Analytics',      'icon' => '📊'],
+    ['file' => 'index.php',       'label' => 'Dashboard',      'icon' => '🏠'],
+    ['file' => 'companies.php',   'label' => 'Companies',      'icon' => '🏢'],
+    ['file' => 'templates.php',   'label' => 'Page Templates', 'icon' => '📐'],
+    ['file' => 'analytics.php',   'label' => 'Analytics',      'icon' => '📊'],
+    ['file' => 'ai-settings.php', 'label' => 'AI Settings',    'icon' => '🤖'],
 ];
 
 function admin_layout_open(string $title): void {

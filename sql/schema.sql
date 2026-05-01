@@ -430,6 +430,18 @@ CREATE TABLE IF NOT EXISTS password_resets (
   KEY idx_pr_expires (expires_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- ---------------------------------------------------------------------
+-- platform_settings  (HQ-level key/value store: AI provider, API keys, etc.)
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS platform_settings (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  setting_key VARCHAR(80) NOT NULL,
+  setting_value TEXT,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uniq_ps_key (setting_key)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- Run install.php once after importing this schema to seed the
