@@ -27,6 +27,11 @@ $CA_MENU = [
     ['file' => 'media.php',        'label' => 'Media',           'icon' => '🖼️'],
 ];
 
+// Staff & access — owner-only
+if (($ca['role'] ?? '') === 'owner') {
+    $CA_MENU[] = ['file' => 'staff.php', 'label' => 'Staff', 'icon' => '🔑'];
+}
+
 function ca_open(string $title): void {
     global $CA_MENU, $ca, $company;
     admin_head(

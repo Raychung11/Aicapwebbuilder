@@ -37,38 +37,59 @@ For example: company `slug = 'ladaza'` ↔ Hostinger subdomain `ladaza.aicap.my`
 
 ---
 
-## Step 2 — Create the company admin login
+## Step 2 — Create the first owner login
 
-The tenant needs a `company_admins` account so they can log in at
-`/company-admin/login.php`.
+The tenant needs at least one `company_admins` account (role = `owner`) so
+they can log in at `/company-admin/login.php`. Once that first owner exists,
+**all subsequent staff are added through the UI** at
+**Company Admin → Staff** — no more SQL required.
 
-> Today this is done via SQL. A UI is on the roadmap — see *Future improvements*
-> at the bottom.
+> A UI for creating the first owner from `/admin/company-edit.php` is on the
+> roadmap — see *Future improvements* at the bottom.
 
-In **hPanel → Databases → phpMyAdmin** (or any MySQL client) on the AICAP
-database, run:
+For now, in **hPanel → Databases → phpMyAdmin** (or any MySQL client),
+run this once per new tenant:
 
 ```sql
 -- Use the company id you just created (Companies page shows it in the URL)
-SET @cid := 5;
+SET @cid   := 5;
 SET @email := 'owner@ladaza.my';
 SET @name  := 'Ladaza Owner';
--- Generate a bcrypt hash with PHP first (see below) and paste it in:
+-- Generate a bcrypt hash first (see below) and paste it in:
 SET @hash  := '$2y$10$REPLACE_WITH_GENERATED_HASH';
 
 INSERT INTO company_admins (company_id, name, email, password_hash, role)
 VALUES (@cid, @name, @email, @hash, 'owner');
 ```
 
-To generate the bcrypt hash, run this in **hPanel → Advanced → SSH Access**
-or any local PHP shell:
+To generate the bcrypt hash, run this in **hPanel → Advanced → SSH** or any
+local PHP shell:
 
 ```bash
 php -r "echo password_hash('YourTempPassword123!', PASSWORD_BCRYPT, ['cost' => 10]), \"\n\";"
 ```
 
-Send the tenant the email + temporary password and tell them to reset it via
-`/company-admin/forgot-password.php` on first login.
+Send the tenant the email + temporary password and tell them to reset it
+via `/company-admin/forgot-password.php` on first login.
+
+### After the first owner exists — add more staff via the UI
+
+The owner can add managers, additional owners, and staff at
+**Company Admin → Staff** without any SQL:
+
+- Fill in name + email + role + initial password (random one is pre-filled)
+- Click **Add Staff**
+- Click **Send reset link** on their row to email them a self-set password URL
+
+Roles available:
+- **Owner** — full admin access including the Staff page itself
+- **Manager** — full admin access for daily operations (products, vouchers,
+  leads, branches, settings) — cannot manage staff
+- **Staff** — same as Manager today; reserved for future fine-grained
+  restrictions
+
+Owners cannot demote the last active owner or disable / delete their own
+account.
 
 ---
 
