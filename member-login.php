@@ -10,8 +10,9 @@ $err = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_check();
-    $phone = trim((string) input('phone'));
-    $pass  = (string) input('password');
+    $phone_raw = trim((string) input('phone'));
+    $phone     = normalize_phone($phone_raw);
+    $pass      = (string) input('password');
     if ($phone === '' || $pass === '') {
         $err = 'Please enter your phone and password.';
     } elseif (member_login($phone, $pass)) {
@@ -31,9 +32,13 @@ layout_head($company, 'Member Login');
       <form method="post" autocomplete="on">
         <?= csrf_field() ?>
         <label>Phone</label>
-        <input class="input" name="phone" type="tel" autocomplete="tel"
-               inputmode="tel" required autofocus
-               value="<?= e($_POST['phone'] ?? '') ?>">
+        <div class="phone-field">
+          <span class="prefix"><?= e(DEFAULT_COUNTRY_LABEL) ?></span>
+          <input name="phone" type="tel" autocomplete="tel"
+                 inputmode="tel" required autofocus
+                 placeholder="123456789"
+                 value="<?= e($_POST['phone'] ?? '') ?>">
+        </div>
         <label>Password</label>
         <input class="input" type="password" name="password"
                autocomplete="current-password" required>

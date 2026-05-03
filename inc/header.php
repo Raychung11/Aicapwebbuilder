@@ -197,6 +197,21 @@ section h2 { font-size: clamp(20px, 3vw, 26px); margin: 0 0 16px; }
   font: inherit; background:#fff;
 }
 .input:focus { outline: 2px solid var(--c-primary); outline-offset: 1px; border-color: var(--c-primary); }
+
+.phone-field {
+  display:flex; align-items:stretch; border:1px solid #d1d5db; border-radius:8px;
+  background:#fff; overflow:hidden;
+}
+.phone-field:focus-within { outline: 2px solid var(--c-primary); outline-offset: 1px; border-color: var(--c-primary); }
+.phone-field .prefix {
+  padding: 12px 14px; background:#f3f4f6; color:#374151; font-weight:600;
+  border-right:1px solid #e5e7eb; display:flex; align-items:center;
+  font-variant-numeric: tabular-nums;
+}
+.phone-field input {
+  flex:1; min-width:0; border:0; padding:12px; background:transparent; font: inherit;
+}
+.phone-field input:focus { outline: 0; }
 label { font-size: 13px; color:#444; display:block; margin: 12px 0 4px; font-weight: 500; }
 .alert { padding:11px 14px; border-radius:8px; margin: 12px 0; font-size: 14px; }
 .alert.error   { background:#fee; color:#a00; }

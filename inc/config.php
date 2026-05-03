@@ -18,6 +18,8 @@ define('APP_NAME', 'AICAP Furniture BOS');
 define('APP_BASE_DOMAIN', 'aicap.my');         // root domain
 define('APP_URL_SCHEME', 'https');             // 'http' for local
 define('APP_TIMEZONE', 'Asia/Kuala_Lumpur');
+define('DEFAULT_COUNTRY_CODE', '60');          // E.164 country code without '+'
+define('DEFAULT_COUNTRY_LABEL', '+60');        // human label shown on phone inputs
 
 // ---------- Storage ----------
 define('UPLOAD_DIR', __DIR__ . '/../uploads');

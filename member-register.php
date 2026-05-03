@@ -10,13 +10,16 @@ $err = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_check();
-    $name  = trim((string) input('name'));
-    $phone = trim((string) input('phone'));
-    $email = trim((string) input('email')) ?: null;
-    $pass  = (string) input('password');
+    $name      = trim((string) input('name'));
+    $phone_raw = trim((string) input('phone'));
+    $phone     = normalize_phone($phone_raw);
+    $email     = trim((string) input('email')) ?: null;
+    $pass      = (string) input('password');
 
     if ($name === '' || $phone === '' || strlen($pass) < 6) {
         $err = 'Please fill all fields. Password must be at least 6 characters.';
+    } elseif (strlen($phone) < 9 || strlen($phone) > 15) {
+        $err = 'That phone number looks invalid.';
     } elseif ($email !== null && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $err = 'That email address looks invalid.';
     } else {
@@ -60,9 +63,12 @@ layout_head($company, 'Register');
                value="<?= e($_POST['name'] ?? '') ?>">
 
         <label>Phone</label>
-        <input class="input" name="phone" type="tel" required autocomplete="tel"
-               inputmode="tel" placeholder="e.g. 60123456789"
-               value="<?= e($_POST['phone'] ?? '') ?>">
+        <div class="phone-field">
+          <span class="prefix"><?= e(DEFAULT_COUNTRY_LABEL) ?></span>
+          <input name="phone" type="tel" required autocomplete="tel"
+                 inputmode="tel" placeholder="123456789"
+                 value="<?= e($_POST['phone'] ?? '') ?>">
+        </div>
 
         <label>Email <span class="muted">(optional)</span></label>
         <input class="input" type="email" name="email" autocomplete="email"

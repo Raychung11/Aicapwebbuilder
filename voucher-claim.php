@@ -41,11 +41,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $member = current_member();
 
         if (!$member) {
-            $phone = trim((string) input('phone'));
+            $phone = normalize_phone(trim((string) input('phone')));
             $pass  = (string) input('password');
 
             if ($phone === '' || $pass === '') {
                 throw new RuntimeException('Please enter your phone and password.');
+            }
+            if (strlen($phone) < 9 || strlen($phone) > 15) {
+                throw new RuntimeException('That phone number looks invalid.');
             }
 
             $existing = db_one('SELECT * FROM members WHERE phone = ? LIMIT 1', [$phone]);
@@ -163,8 +166,11 @@ layout_head($company, 'Claim Voucher');
             </div>
 
             <label>Phone Number</label>
-            <input class="input" name="phone" type="tel" autocomplete="tel"
-                   inputmode="tel" placeholder="e.g. 60123456789" required>
+            <div class="phone-field">
+              <span class="prefix"><?= e(DEFAULT_COUNTRY_LABEL) ?></span>
+              <input name="phone" type="tel" autocomplete="tel"
+                     inputmode="tel" placeholder="123456789" required>
+            </div>
 
             <label>Password <span class="muted">(min 6 chars)</span></label>
             <input class="input" name="password" type="password" autocomplete="new-password"

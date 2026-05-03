@@ -63,6 +63,30 @@ function whatsapp_link(string $number, string $message = ''): string {
 }
 
 /**
+ * Normalize a user-typed phone number to a canonical
+ * <country_code><national_number> form (no '+', no spaces).
+ *
+ * Rules (with cc='60'):
+ *   '0123456789'        → '60123456789'
+ *   '123456789'         → '60123456789'
+ *   '60123456789'       → '60123456789'
+ *   '+60 12-345 6789'   → '60123456789'
+ *   '601 23456789'      → '60123456789'
+ *
+ * Empty input returns ''.
+ */
+function normalize_phone(string $input, ?string $cc = null): string {
+    $cc    = $cc ?: DEFAULT_COUNTRY_CODE;
+    $clean = preg_replace('/\D+/', '', $input);
+    if ($clean === null || $clean === '') return '';
+    $clean = ltrim($clean, '0');
+    if (strncmp($clean, $cc, strlen($cc)) === 0) {
+        $clean = substr($clean, strlen($cc));
+    }
+    return $cc . $clean;
+}
+
+/**
  * Tenant-scoped fetch helpers. Always pass company_id explicitly.
  */
 function tenant_one(string $sql, int $company_id, array $params = []): ?array {
