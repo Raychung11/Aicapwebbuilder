@@ -18,6 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'branch_id'         => $branch_id,
         'title'             => trim((string) input('title')),
         'description'       => (string) input('description', ''),
+        'marketing_script'  => trim((string) input('marketing_script', '')) ?: null,
         'type'              => in_array(input('type'), ['percent','fixed','gift','freebie'], true) ? input('type') : 'percent',
         'value'             => input('value') !== '' ? (float) input('value') : null,
         'expiry_date'       => input('expiry_date') ?: null,
@@ -29,16 +30,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($id) {
         tenant_row_or_404('vouchers', $id);
         db_exec(
-            'UPDATE vouchers SET branch_id=?, title=?, description=?, type=?, value=?, expiry_date=?,
+            'UPDATE vouchers SET branch_id=?, title=?, description=?, marketing_script=?, type=?, value=?, expiry_date=?,
                                  usage_limit=?, per_member_limit=?, redemption_method=?, status=?
               WHERE company_id=? AND id=?',
             [...array_values($f), $CID, $id]
         );
     } else {
         db_insert(
-            'INSERT INTO vouchers (company_id, branch_id, title, description, type, value, expiry_date,
+            'INSERT INTO vouchers (company_id, branch_id, title, description, marketing_script, type, value, expiry_date,
                                    usage_limit, per_member_limit, redemption_method, status)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
             [$CID, ...array_values($f)]
         );
     }
@@ -78,6 +79,18 @@ ca_open('Vouchers');
     </div>
     <label>Description</label>
     <textarea class="input" name="description" rows="2"><?= e($editing['description'] ?? '') ?></textarea>
+
+    <label>Marketing script <span class="muted">(used in the Agent Portal — leave blank for sensible default)</span></label>
+    <textarea class="input" name="marketing_script" rows="6"
+              placeholder="Hi! 🎁 Special offer from {company_name}:&#10;&#10;🌟 {voucher_title}&#10;💸 {voucher_value}&#10;{expiry_text}&#10;&#10;Claim it here 👇&#10;{voucher_url}&#10;&#10;— {agent_name}"><?= e($editing['marketing_script'] ?? '') ?></textarea>
+    <p class="muted" style="margin-top:6px;font-size:12px;">
+      Available placeholders:
+      <code>{voucher_title}</code> <code>{voucher_value}</code>
+      <code>{expiry_date}</code> <code>{expiry_text}</code>
+      <code>{voucher_url}</code> <code>{company_name}</code>
+      <code>{agent_name}</code>
+    </p>
+
     <div class="row">
       <div class="col"><label>Expiry Date</label><input class="input" type="date" name="expiry_date" value="<?= e($editing['expiry_date'] ?? '') ?>"></div>
       <div class="col"><label>Usage Limit (total)</label><input class="input" type="number" name="usage_limit" value="<?= e($editing['usage_limit'] ?? '') ?>"></div>

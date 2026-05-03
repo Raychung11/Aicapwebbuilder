@@ -46,6 +46,7 @@ try {
         ['salespersons',   'referral_code',   "VARCHAR(40) DEFAULT NULL AFTER role"],
         ['salespersons',   'commission_rate', "DECIMAL(5,2) DEFAULT NULL AFTER referral_code"],
         ['voucher_claims', 'salesperson_id',  "INT UNSIGNED DEFAULT NULL AFTER member_id"],
+        ['vouchers',       'marketing_script',"TEXT AFTER description"],
     ];
     foreach ($columns_to_add as [$tbl, $col, $type]) {
         $exists = db_one(

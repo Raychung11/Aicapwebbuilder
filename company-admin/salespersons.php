@@ -163,7 +163,8 @@ ca_open('Salespersons & Agents');
     </form>
 
     <?php if (!empty($editing['referral_code'])):
-      $share_url = APP_URL_SCHEME . '://' . $public_host . '/?ref=' . rawurlencode($editing['referral_code']);
+      $share_url  = APP_URL_SCHEME . '://' . $public_host . '/?ref=' . rawurlencode($editing['referral_code']);
+      $kit_url    = APP_URL_SCHEME . '://' . $public_host . '/agent.php?code=' . rawurlencode($editing['referral_code']);
     ?>
       <div style="margin-top:14px;background:#ecfdf5;padding:14px;border-radius:8px;border-left:3px solid #10b981;">
         <strong style="color:#047857;">Shareable referral link:</strong>
@@ -174,6 +175,19 @@ ca_open('Salespersons & Agents');
         <p class="muted" style="margin:6px 0 0;font-size:12px;">
           Share this with the agent. Anyone landing here will be tagged to them
           for 30 days for voucher claims, leads and QR scans.
+        </p>
+      </div>
+
+      <div style="margin-top:10px;background:#fff7ed;padding:14px;border-radius:8px;border-left:3px solid #f59e0b;">
+        <strong style="color:#b45309;">Marketing kit (Agent Portal):</strong>
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <input class="input" id="kit-url" readonly value="<?= e($kit_url) ?>" onclick="this.select();">
+          <a class="btn outline" href="<?= e($kit_url) ?>" target="_blank" rel="noopener">Open</a>
+          <button type="button" class="btn outline" onclick="navigator.clipboard.writeText(document.getElementById('kit-url').value).then(()=>this.textContent='Copied ✓')">Copy</button>
+        </div>
+        <p class="muted" style="margin:6px 0 0;font-size:12px;">
+          Send this link to the agent. The portal lists every active voucher
+          with auto-generated referral URLs and one-tap WhatsApp share buttons.
         </p>
       </div>
     <?php endif; ?>

@@ -219,6 +219,7 @@ CREATE TABLE IF NOT EXISTS vouchers (
   branch_id INT UNSIGNED DEFAULT NULL,
   title VARCHAR(190) NOT NULL,
   description TEXT,
+  marketing_script TEXT,
   type ENUM('percent','fixed','gift','freebie') NOT NULL DEFAULT 'percent',
   value DECIMAL(12,2) DEFAULT NULL,
   expiry_date DATE DEFAULT NULL,
