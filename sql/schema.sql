@@ -122,11 +122,14 @@ CREATE TABLE IF NOT EXISTS salespersons (
   email VARCHAR(150) DEFAULT NULL,
   whatsapp_number VARCHAR(40) DEFAULT NULL,
   role VARCHAR(80) DEFAULT NULL,
+  referral_code VARCHAR(40) DEFAULT NULL,
+  commission_rate DECIMAL(5,2) DEFAULT NULL,
   status ENUM('active','disabled') NOT NULL DEFAULT 'active',
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   KEY idx_sp_company (company_id),
-  KEY idx_sp_branch (branch_id)
+  KEY idx_sp_branch (branch_id),
+  UNIQUE KEY uniq_sp_refcode (company_id, referral_code)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ---------------------------------------------------------------------
@@ -237,6 +240,7 @@ CREATE TABLE IF NOT EXISTS voucher_claims (
   company_id INT UNSIGNED NOT NULL,
   voucher_id INT UNSIGNED NOT NULL,
   member_id INT UNSIGNED NOT NULL,
+  salesperson_id INT UNSIGNED DEFAULT NULL,
   status ENUM('claimed','redeemed','expired','void') NOT NULL DEFAULT 'claimed',
   voucher_code VARCHAR(40) NOT NULL,
   claimed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -246,7 +250,8 @@ CREATE TABLE IF NOT EXISTS voucher_claims (
   UNIQUE KEY uniq_voucher_code (voucher_code),
   KEY idx_vc_company (company_id),
   KEY idx_vc_voucher (voucher_id),
-  KEY idx_vc_member (member_id)
+  KEY idx_vc_member (member_id),
+  KEY idx_vc_salesperson (salesperson_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ---------------------------------------------------------------------

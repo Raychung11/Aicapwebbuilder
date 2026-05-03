@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/db.php';
-require_once __DIR__ . '/auth.php';   // for session_boot()
+require_once __DIR__ . '/auth.php';      // for session_boot()
+require_once __DIR__ . '/referral.php';  // for capture_referral_from_query()
 
 /**
  * Tenant resolution.
@@ -16,14 +17,21 @@ require_once __DIR__ . '/auth.php';   // for session_boot()
  *      a Hostinger preview URL "just work" for a single tenant before DNS
  *      is wired up.
  *
- * Result is cached per request.
+ * Result is cached per request, and once a tenant is resolved the
+ * referral cookie is captured/refreshed from any ?ref= query.
  */
 function current_company(): ?array {
     static $cache = false;
     if ($cache !== false) {
+        if ($cache) capture_referral_from_query((int) $cache['id']);
         return $cache;
     }
+    $cache = _resolve_company();
+    if ($cache) capture_referral_from_query((int) $cache['id']);
+    return $cache;
+}
 
+function _resolve_company(): ?array {
     // 1. Explicit preview switch via query string
     if (isset($_GET['as']) && $_GET['as'] !== '') {
         $slug = preg_replace('/[^a-z0-9_-]/i', '', (string) $_GET['as']);
@@ -35,7 +43,6 @@ function current_company(): ?array {
             if ($row) {
                 session_boot();
                 $_SESSION['preview_company_id'] = (int) $row['id'];
-                // Strip the ?as= and redirect to a clean URL so refresh stays sticky.
                 $clean = strtok($_SERVER['REQUEST_URI'] ?? '/', '?');
                 $qs = $_GET;
                 unset($qs['as']);
@@ -55,56 +62,49 @@ function current_company(): ?array {
         exit;
     }
 
-    // 3. Sticky session preview (set by step 1)
+    // 3. Sticky session preview
     session_boot();
     if (!empty($_SESSION['preview_company_id'])) {
         $row = db_one(
             'SELECT * FROM companies WHERE id = ? AND status = "active" LIMIT 1',
             [(int) $_SESSION['preview_company_id']]
         );
-        if ($row) {
-            $cache = $row;
-            return $cache;
-        }
+        if ($row) return $row;
     }
 
     // 4. Host-based resolution
     $host = strtolower($_SERVER['HTTP_HOST'] ?? '');
-    $host = preg_replace('/:\d+$/', '', $host);  // strip port
+    $host = preg_replace('/:\d+$/', '', $host);
 
     if ($host !== '' && $host !== APP_BASE_DOMAIN && $host !== 'www.' . APP_BASE_DOMAIN) {
         $base = '.' . APP_BASE_DOMAIN;
         if (substr($host, -strlen($base)) === $base) {
             $sub = substr($host, 0, -strlen($base));
             if ($sub !== '' && $sub !== 'www') {
-                $cache = db_one(
+                $row = db_one(
                     'SELECT * FROM companies WHERE subdomain = ? AND status = "active" LIMIT 1',
                     [$sub]
                 );
-                if ($cache) return $cache;
+                if ($row) return $row;
             }
         } else {
-            // Custom domain
-            $cache = db_one(
+            $row = db_one(
                 'SELECT * FROM companies WHERE custom_domain = ? AND status = "active" LIMIT 1',
                 [$host]
             );
-            if ($cache) return $cache;
+            if ($row) return $row;
         }
     }
 
-    // 5. Single-tenant fallback (only when host doesn't match the platform
-    //    domain — i.e. you're on a preview URL like *.hostingersite.com).
+    // 5. Single-tenant fallback when not on the platform domain
     $on_platform = ($host === APP_BASE_DOMAIN || $host === 'www.' . APP_BASE_DOMAIN);
     if (!$on_platform) {
         $count = (int) (db_one('SELECT COUNT(*) c FROM companies WHERE status = "active"')['c'] ?? 0);
         if ($count === 1) {
-            $cache = db_one('SELECT * FROM companies WHERE status = "active" LIMIT 1');
-            return $cache;
+            return db_one('SELECT * FROM companies WHERE status = "active" LIMIT 1');
         }
     }
 
-    $cache = null;
     return null;
 }
 
@@ -130,9 +130,6 @@ function require_company(): array {
     return $c;
 }
 
-/**
- * Build the public URL of a given company subdomain.
- */
 function company_url(array $company, string $path = '/'): string {
     if (!empty($company['custom_domain'])) {
         return APP_URL_SCHEME . '://' . $company['custom_domain'] . $path;
@@ -140,12 +137,7 @@ function company_url(array $company, string $path = '/'): string {
     return APP_URL_SCHEME . '://' . $company['subdomain'] . '.' . APP_BASE_DOMAIN . $path;
 }
 
-/**
- * True if the active company was selected via the ?as= preview override.
- */
 function is_preview_mode(): bool {
-    if (session_status() !== PHP_SESSION_ACTIVE) {
-        return false;
-    }
+    if (session_status() !== PHP_SESSION_ACTIVE) return false;
     return !empty($_SESSION['preview_company_id']);
 }

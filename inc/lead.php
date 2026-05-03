@@ -6,9 +6,10 @@ require_once __DIR__ . '/db.php';
  */
 /**
  * Atomically claim a voucher for a member.
+ * Optionally attribute the claim to a salesperson (for referral tracking).
  * Returns the generated code on success; throws RuntimeException on failure.
  */
-function claim_voucher(int $company_id, int $voucher_id, int $member_id): string {
+function claim_voucher(int $company_id, int $voucher_id, int $member_id, ?int $salesperson_id = null): string {
     require_once __DIR__ . '/helpers.php';
 
     $v = db_one(
@@ -45,9 +46,9 @@ function claim_voucher(int $company_id, int $voucher_id, int $member_id): string
     } while ($exists);
 
     db_insert(
-        'INSERT INTO voucher_claims (company_id, voucher_id, member_id, status, voucher_code)
-         VALUES (?, ?, ?, "claimed", ?)',
-        [$company_id, $voucher_id, $member_id, $code]
+        'INSERT INTO voucher_claims (company_id, voucher_id, member_id, salesperson_id, status, voucher_code)
+         VALUES (?, ?, ?, ?, "claimed", ?)',
+        [$company_id, $voucher_id, $member_id, $salesperson_id, $code]
     );
     return $code;
 }

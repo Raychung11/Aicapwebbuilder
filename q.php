@@ -11,6 +11,7 @@ require_once __DIR__ . '/inc/auth.php';
 require_once __DIR__ . '/inc/helpers.php';
 require_once __DIR__ . '/inc/analytics.php';
 require_once __DIR__ . '/inc/lead.php';
+require_once __DIR__ . '/inc/referral.php';
 
 $company_slug = trim((string) ($_GET['c'] ?? ''));
 $qr_slug      = trim((string) ($_GET['k'] ?? ''));
@@ -39,6 +40,9 @@ if (!$campaign) {
 
 $member = current_member();
 
+// If the QR includes ?ref=AGENT, set the referral cookie before we redirect
+capture_referral_from_query((int) $company['id']);
+
 db_insert(
     'INSERT INTO campaign_scans (company_id, campaign_id, member_id, ip_address, user_agent)
      VALUES (?, ?, ?, ?, ?)',
@@ -58,11 +62,14 @@ track_event((int)$company['id'], 'campaign_scan', [
     'member_id'   => $member['id'] ?? null,
 ]);
 
+$sp_id = current_referral_sp_id((int) $company['id']);
 create_lead((int)$company['id'], [
-    'campaign_id' => (int)$campaign['id'],
-    'member_id'   => $member['id'] ?? null,
-    'source'      => 'campaign_scan',
-    'notes'       => 'Scanned QR: ' . $campaign['name'],
+    'campaign_id'    => (int)$campaign['id'],
+    'member_id'      => $member['id'] ?? null,
+    'salesperson_id' => $sp_id,
+    'source'         => 'campaign_scan',
+    'notes'          => 'Scanned QR: ' . $campaign['name']
+                       . ($sp_id ? ' (ref: SP#' . $sp_id . ')' : ''),
 ]);
 
 redirect($campaign['target_url']);

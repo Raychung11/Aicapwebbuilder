@@ -83,7 +83,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $member = current_member();
         }
 
-        $code = claim_voucher($cid, $voucher_id, (int) $member['id']);
+        $sp_id = current_referral_sp_id($cid);
+        $code  = claim_voucher($cid, $voucher_id, (int) $member['id'], $sp_id);
 
         track_event($cid, 'voucher_claim', [
             'entity_type' => 'voucher',
@@ -92,10 +93,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ]);
         create_lead($cid, [
             'member_id'      => (int) $member['id'],
+            'salesperson_id' => $sp_id,
             'customer_name'  => $member['name']  ?? null,
             'customer_phone' => $member['phone'] ?? null,
             'source'         => 'voucher_claim',
-            'notes'          => 'Voucher claim: ' . $voucher['title'],
+            'notes'          => 'Voucher claim: ' . $voucher['title']
+                              . ($sp_id ? ' (ref: SP#' . $sp_id . ')' : ''),
         ]);
 
     } catch (RuntimeException $ex) {

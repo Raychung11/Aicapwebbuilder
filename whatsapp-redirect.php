@@ -31,15 +31,18 @@ track_event($cid, 'whatsapp_click', [
     'member_id'   => $member['id'] ?? null,
 ]);
 
+$sp_id = current_referral_sp_id($cid);
 create_lead($cid, [
     'branch_id'      => $branch_id,
     'product_id'     => $product_id,
     'member_id'      => $member['id'] ?? null,
     'campaign_id'    => $campaign_id,
+    'salesperson_id' => $sp_id,
     'customer_name'  => $member['name']  ?? null,
     'customer_phone' => $member['phone'] ?? null,
     'source'         => 'whatsapp_click',
-    'notes'          => 'Auto-generated from WhatsApp click',
+    'notes'          => 'Auto-generated from WhatsApp click'
+                      . ($sp_id ? ' (ref: SP#' . $sp_id . ')' : ''),
 ]);
 
 $number = $company['whatsapp_number'] ?: '';

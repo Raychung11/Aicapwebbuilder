@@ -43,6 +43,9 @@ try {
         ['companies', 'banner_subtitle',  "TEXT AFTER banner_title"],
         ['companies', 'banner_cta_text',  "VARCHAR(120) DEFAULT NULL AFTER banner_subtitle"],
         ['companies', 'banner_cta_url',   "VARCHAR(500) DEFAULT NULL AFTER banner_cta_text"],
+        ['salespersons',   'referral_code',   "VARCHAR(40) DEFAULT NULL AFTER role"],
+        ['salespersons',   'commission_rate', "DECIMAL(5,2) DEFAULT NULL AFTER referral_code"],
+        ['voucher_claims', 'salesperson_id',  "INT UNSIGNED DEFAULT NULL AFTER member_id"],
     ];
     foreach ($columns_to_add as [$tbl, $col, $type]) {
         $exists = db_one(

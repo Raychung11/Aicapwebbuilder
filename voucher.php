@@ -20,8 +20,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirect('/voucher-claim.php?id=' . $vid);
     }
     $voucher_id = (int) input('voucher_id', 0);
+    $sp_id      = current_referral_sp_id($cid);
     try {
-        $code = claim_voucher($cid, $voucher_id, (int) $member['id']);
+        $code = claim_voucher($cid, $voucher_id, (int) $member['id'], $sp_id);
         track_event($cid, 'voucher_claim', [
             'entity_type' => 'voucher',
             'entity_id'   => $voucher_id,
@@ -31,10 +32,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $cid, [$voucher_id]);
         create_lead($cid, [
             'member_id'      => (int) $member['id'],
+            'salesperson_id' => $sp_id,
             'customer_name'  => $member['name']  ?? null,
             'customer_phone' => $member['phone'] ?? null,
             'source'         => 'voucher_claim',
-            'notes'          => 'Voucher claim: ' . ($v['title'] ?? ''),
+            'notes'          => 'Voucher claim: ' . ($v['title'] ?? '')
+                              . ($sp_id ? ' (ref: SP#' . $sp_id . ')' : ''),
         ]);
         flash_set('success', 'Voucher claimed! Your code: ' . $code);
     } catch (RuntimeException $ex) {
