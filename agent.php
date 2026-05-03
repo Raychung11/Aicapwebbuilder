@@ -21,24 +21,103 @@ require_once __DIR__ . '/inc/analytics.php';
 $company = require_company();
 $cid     = (int) $company['id'];
 $code    = trim((string) input('code', ''));
+$err     = '';
+$agent   = null;
 
-if ($code === '') {
-    http_response_code(404);
-    echo '<h1>Agent code required</h1><p>Add <code>?code=YOURCODE</code> to the URL.</p>';
-    exit;
+if ($code !== '') {
+    $agent = tenant_one(
+        'SELECT * FROM salespersons WHERE company_id = ? AND referral_code = ? AND status = "active" LIMIT 1',
+        $cid, [$code]
+    );
+    if (!$agent) {
+        $err = 'That agent code is not active. Please check with ' . $company['name'] . '.';
+    }
 }
 
-$agent = tenant_one(
-    'SELECT * FROM salespersons WHERE company_id = ? AND referral_code = ? AND status = "active" LIMIT 1',
-    $cid, [$code]
-);
-
+// Render the code-entry form when no valid agent
 if (!$agent) {
-    http_response_code(404);
-    echo '<h1>Unknown referral code</h1><p>This agent code is not active. Contact ' . e($company['name']) . '.</p>';
+    $primary   = htmlspecialchars($company['theme_color']           ?: '#111827', ENT_QUOTES);
+    $secondary = htmlspecialchars($company['theme_secondary_color'] ?: '#f59e0b', ENT_QUOTES);
+    ?><!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="<?= $primary ?>">
+<meta name="robots" content="noindex,nofollow">
+<title>Agent Login · <?= e($company['name']) ?></title>
+<style>
+* { box-sizing: border-box; }
+html, body { margin:0; padding:0; }
+body {
+  font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  min-height: 100vh; display:flex; align-items:center; justify-content:center; padding: 20px;
+  color:#fff;
+  background:
+    radial-gradient(700px 400px at 110% -10%, rgba(245,158,11,.18), transparent 60%),
+    radial-gradient(900px 500px at -10% 110%, rgba(99,102,241,.15), transparent 60%),
+    linear-gradient(135deg, <?= $primary ?>, #000);
+}
+.card { background:#fff; color:#111; padding: 30px; border-radius: 14px;
+        max-width: 400px; width: 100%; box-shadow: 0 12px 40px rgba(0,0,0,.4); }
+.brand { display:flex; align-items:center; gap:10px; margin-bottom: 14px; }
+.brand .dot { width: 28px; height: 28px; border-radius: 8px; background: <?= $secondary ?>;
+              color: <?= $primary ?>; display:flex; align-items:center; justify-content:center;
+              font-weight: 800; font-size: 13px; }
+.brand strong { font-size: 14px; }
+.brand span { font-size: 11px; color:#6b7280; text-transform: uppercase; letter-spacing:.04em; display:block; }
+h2 { margin: 4px 0 4px; font-size: 24px; }
+p.lead { color:#6b7280; margin: 0 0 20px; font-size: 14px; }
+label { display:block; font-size:13px; color:#374151; margin: 0 0 6px; font-weight:500; }
+input { width:100%; padding:12px 14px; border:1px solid #d1d5db; border-radius:10px;
+        font: inherit; text-transform: uppercase; letter-spacing:.05em; }
+input:focus { outline:0; border-color: <?= $primary ?>; box-shadow: 0 0 0 3px rgba(15,23,42,.12); }
+button { width:100%; padding: 13px; border:0; cursor:pointer;
+         background: <?= $primary ?>; color:#fff; font-weight:600; border-radius:10px;
+         margin-top: 14px; font-size: 15px; }
+button:hover { filter: brightness(1.1); }
+.alert { background:#fee2e2; color:#991b1b; padding:11px 14px; border-radius:8px;
+         margin-bottom: 14px; font-size: 14px; }
+.foot { margin-top: 18px; text-align:center; font-size:13px; color:#6b7280; }
+.foot a { color: <?= $primary ?>; font-weight: 600; text-decoration:none; }
+</style>
+</head>
+<body>
+<form class="card" method="get" autocomplete="off">
+  <div class="brand">
+    <div class="dot">A</div>
+    <div>
+      <strong><?= e($company['name']) ?></strong>
+      <span>Agent Portal</span>
+    </div>
+  </div>
+  <h2>Sign in</h2>
+  <p class="lead">Enter your agent code to open your marketing kit.</p>
+
+  <?php if ($err): ?><div class="alert">⚠️ <?= e($err) ?></div><?php endif; ?>
+
+  <label for="code">Agent code</label>
+  <input id="code" name="code" type="text" required autofocus
+         placeholder="e.g. ALICE001"
+         value="<?= e($code) ?>">
+
+  <button type="submit">Open my kit →</button>
+
+  <div class="foot">
+    Don't have a code yet?<br>
+    Contact <?= e($company['name']) ?> to register as an agent.
+    <div style="margin-top:12px;">
+      <a href="/">← Back to <?= e($company['name']) ?></a>
+    </div>
+  </div>
+</form>
+</body>
+</html>
+<?php
     exit;
 }
 
+// ===== Agent is valid — render the marketing kit =====
 track_event($cid, 'agent_portal_view', [
     'entity_type' => 'salesperson',
     'entity_id'   => (int) $agent['id'],
