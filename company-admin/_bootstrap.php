@@ -21,6 +21,7 @@ $CA_MENU = [
     ['file' => 'referrals.php',    'label' => 'Referrals',       'icon' => '🔗'],
     ['file' => 'products.php',     'label' => 'Products',        'icon' => '🛋️'],
     ['file' => 'featured.php',     'label' => 'Featured',        'icon' => '⭐'],
+    ['file' => 'packages.php',     'label' => 'Packages',        'icon' => '📦'],
     ['file' => 'vouchers.php',     'label' => 'Vouchers',        'icon' => '🎁'],
     ['file' => 'campaigns.php',    'label' => 'Campaigns',       'icon' => '📷'],
     ['file' => 'leads.php',        'label' => 'Leads',           'icon' => '🎯'],

@@ -448,6 +448,61 @@ CREATE TABLE IF NOT EXISTS platform_settings (
   UNIQUE KEY uniq_ps_key (setting_key)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- ---------------------------------------------------------------------
+-- Furniture packages (curated room bundles like Krafmen's "2 rooms
+-- fully furnished" deals). Each package has sections (Master Room,
+-- Living, Dining, TV Cabinet…) and each section can offer choices
+-- (multiple sofa designs, multiple TV cabinet designs…).
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS packages (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  company_id INT UNSIGNED NOT NULL,
+  title VARCHAR(190) NOT NULL,
+  subtitle VARCHAR(190) DEFAULT NULL,
+  description TEXT,
+  hero_image VARCHAR(255) DEFAULT NULL,
+  badge VARCHAR(80) DEFAULT NULL,
+  price DECIMAL(12,2) DEFAULT NULL,
+  was_price DECIMAL(12,2) DEFAULT NULL,
+  features_json TEXT,
+  pwp_blurb TEXT,
+  cta_text VARCHAR(120) DEFAULT NULL,
+  cta_url VARCHAR(500) DEFAULT NULL,
+  status ENUM('active','draft','archived') NOT NULL DEFAULT 'active',
+  is_featured TINYINT(1) NOT NULL DEFAULT 0,
+  sort_order INT NOT NULL DEFAULT 0,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_pkg_company (company_id),
+  KEY idx_pkg_status (company_id, status),
+  KEY idx_pkg_featured (company_id, is_featured)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS package_sections (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  package_id INT UNSIGNED NOT NULL,
+  company_id INT UNSIGNED NOT NULL,
+  title VARCHAR(150) NOT NULL,
+  description TEXT,
+  image VARCHAR(255) DEFAULT NULL,
+  sort_order INT NOT NULL DEFAULT 0,
+  PRIMARY KEY (id),
+  KEY idx_pkgsec_package (package_id),
+  KEY idx_pkgsec_company (company_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS package_choices (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  section_id INT UNSIGNED NOT NULL,
+  company_id INT UNSIGNED NOT NULL,
+  label VARCHAR(150) DEFAULT NULL,
+  image VARCHAR(255) NOT NULL,
+  sort_order INT NOT NULL DEFAULT 0,
+  PRIMARY KEY (id),
+  KEY idx_pkgch_section (section_id),
+  KEY idx_pkgch_company (company_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- Run install.php once after importing this schema to seed the
