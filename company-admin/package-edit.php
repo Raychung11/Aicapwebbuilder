@@ -3,6 +3,11 @@ require_once __DIR__ . '/_bootstrap.php';
 require_once __DIR__ . '/../inc/db.php';
 require_once __DIR__ . '/../inc/upload.php';
 
+if (!db_table_exists('packages')) {
+    flash_set('error', 'Run /install.php once to enable Packages, then refresh.');
+    redirect('/company-admin/packages.php');
+}
+
 $id      = (int) input('id', 0);
 $package = $id ? tenant_row_or_404('packages', $id) : null;
 

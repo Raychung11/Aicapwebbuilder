@@ -126,3 +126,23 @@ function set_platform_setting(string $key, ?string $value): void {
         [$key, $value]
     );
 }
+
+/**
+ * Cheap "does this table exist?" check, cached per request.
+ * Useful when an admin page references a freshly-added table that
+ * may not exist yet on a not-yet-migrated install.
+ */
+function db_table_exists(string $name): bool {
+    static $cache = [];
+    if (isset($cache[$name])) return $cache[$name];
+    try {
+        $row = db_one(
+            'SELECT 1 AS x FROM information_schema.TABLES
+              WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? LIMIT 1',
+            [$name]
+        );
+        return $cache[$name] = (bool) $row;
+    } catch (Throwable $e) {
+        return $cache[$name] = false;
+    }
+}

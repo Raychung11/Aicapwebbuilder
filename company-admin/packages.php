@@ -2,6 +2,73 @@
 require_once __DIR__ . '/_bootstrap.php';
 require_once __DIR__ . '/../inc/db.php';
 
+// Tables created in commit e9fe44c — render a helpful onboarding panel
+// instead of fatal-erroring when an existing install hasn't been migrated.
+if (!db_table_exists('packages')) {
+    ca_open('Furniture Packages');
+    ?>
+    <div class="card">
+      <h3 style="margin:0 0 8px;">📦 Packages — one quick setup step</h3>
+      <p>The Packages feature uses three new tables that don't exist on your database yet.</p>
+      <p><strong>Easy fix (recommended):</strong> upload <code>install.php</code> from the
+         repo to your server, visit <code>https://aicap.my/install.php</code> once, then
+         delete <code>install.php</code> again.</p>
+      <p><strong>Or in phpMyAdmin:</strong> paste this SQL block into the SQL tab and run it:</p>
+      <pre style="background:#0b1020;color:#cbd5e1;padding:14px;border-radius:8px;overflow:auto;font-size:12px;line-height:1.45;">CREATE TABLE IF NOT EXISTS packages (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  company_id INT UNSIGNED NOT NULL,
+  title VARCHAR(190) NOT NULL,
+  subtitle VARCHAR(190) DEFAULT NULL,
+  description TEXT,
+  hero_image VARCHAR(255) DEFAULT NULL,
+  badge VARCHAR(80) DEFAULT NULL,
+  price DECIMAL(12,2) DEFAULT NULL,
+  was_price DECIMAL(12,2) DEFAULT NULL,
+  features_json TEXT,
+  pwp_blurb TEXT,
+  cta_text VARCHAR(120) DEFAULT NULL,
+  cta_url VARCHAR(500) DEFAULT NULL,
+  status ENUM('active','draft','archived') NOT NULL DEFAULT 'active',
+  is_featured TINYINT(1) NOT NULL DEFAULT 0,
+  sort_order INT NOT NULL DEFAULT 0,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_pkg_company (company_id),
+  KEY idx_pkg_status (company_id, status),
+  KEY idx_pkg_featured (company_id, is_featured)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS package_sections (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  package_id INT UNSIGNED NOT NULL,
+  company_id INT UNSIGNED NOT NULL,
+  title VARCHAR(150) NOT NULL,
+  description TEXT,
+  image VARCHAR(255) DEFAULT NULL,
+  sort_order INT NOT NULL DEFAULT 0,
+  PRIMARY KEY (id),
+  KEY idx_pkgsec_package (package_id),
+  KEY idx_pkgsec_company (company_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS package_choices (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  section_id INT UNSIGNED NOT NULL,
+  company_id INT UNSIGNED NOT NULL,
+  label VARCHAR(150) DEFAULT NULL,
+  image VARCHAR(255) NOT NULL,
+  sort_order INT NOT NULL DEFAULT 0,
+  PRIMARY KEY (id),
+  KEY idx_pkgch_section (section_id),
+  KEY idx_pkgch_company (company_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;</pre>
+      <p>Refresh this page after running either option — the form below will appear.</p>
+    </div>
+    <?php
+    ca_close();
+    exit;
+}
+
 $action = (string) input('action', '');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {

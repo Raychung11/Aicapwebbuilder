@@ -9,12 +9,14 @@ $company = require_company();
 $cid     = (int) $company['id'];
 track_event($cid, 'page_view', ['entity_type' => 'packages']);
 
-$packages = tenant_all(
-    'SELECT * FROM packages
-      WHERE company_id = ? AND status = "active"
-      ORDER BY is_featured DESC, sort_order, created_at DESC',
-    $cid
-);
+$packages = db_table_exists('packages')
+    ? tenant_all(
+        'SELECT * FROM packages
+          WHERE company_id = ? AND status = "active"
+          ORDER BY is_featured DESC, sort_order, created_at DESC',
+        $cid
+      )
+    : [];
 
 $page_title = 'Furniture Packages | ' . $company['name'];
 $page_meta  = [

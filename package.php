@@ -9,7 +9,7 @@ $company = require_company();
 $cid     = (int) $company['id'];
 $id      = (int) input('id', 0);
 
-$package = $id ? tenant_one(
+$package = ($id && db_table_exists('packages')) ? tenant_one(
     'SELECT * FROM packages WHERE company_id = ? AND id = ? AND status = "active" LIMIT 1',
     $cid, [$id]
 ) : null;
