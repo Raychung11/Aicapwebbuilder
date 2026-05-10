@@ -243,7 +243,7 @@ footer.site .cols { display:grid; gap:18px; grid-template-columns: 1fr; }
 @media (min-width: 900px) { footer.site .cols { grid-template-columns: 1.6fr 1fr 1fr 1fr; } }
 footer.site h4 { margin:0 0 10px; color:#fff; font-size:14px; text-transform: uppercase; letter-spacing:.04em; }
 footer.site .links a { display:block; padding: 4px 0; color:#cbd5e1; }
-footer.site .copy { margin-top:24px; padding-top:14px; border-top:1px solid #1f2937; opacity:.6; font-size:12px; }
+footer.site .copy { margin-top:24px; padding-top:14px; opacity:.6; font-size:12px; }
 
 /* ---------- Floating WhatsApp ---------- */
 .fab-whatsapp {
