@@ -238,7 +238,6 @@ label { font-size: 13px; color:#444; display:block; margin: 12px 0 4px; font-wei
 /* ---------- Footer ---------- */
 footer.site { background:#111; color:#bbb; padding: 28px 0; margin-top: 40px; font-size:14px; }
 footer.site a { color:#fff; text-decoration:none; }
-footer.site a:hover { text-decoration:underline; }
 footer.site .cols { display:grid; gap:18px; grid-template-columns: 1fr; }
 @media (min-width: 600px) { footer.site .cols { grid-template-columns: repeat(2, 1fr); } }
 @media (min-width: 900px) { footer.site .cols { grid-template-columns: 1.6fr 1fr 1fr 1fr; } }
