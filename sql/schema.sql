@@ -483,12 +483,27 @@ CREATE TABLE IF NOT EXISTS package_sections (
   package_id INT UNSIGNED NOT NULL,
   company_id INT UNSIGNED NOT NULL,
   title VARCHAR(150) NOT NULL,
+  kind ENUM('included','choice') NOT NULL DEFAULT 'included',
   description TEXT,
   image VARCHAR(255) DEFAULT NULL,
   sort_order INT NOT NULL DEFAULT 0,
   PRIMARY KEY (id),
   KEY idx_pkgsec_package (package_id),
   KEY idx_pkgsec_company (company_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS package_section_items (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  section_id INT UNSIGNED NOT NULL,
+  company_id INT UNSIGNED NOT NULL,
+  product_id INT UNSIGNED NOT NULL,
+  quantity INT UNSIGNED NOT NULL DEFAULT 1,
+  sort_order INT NOT NULL DEFAULT 0,
+  PRIMARY KEY (id),
+  UNIQUE KEY uniq_psi_section_product (section_id, product_id),
+  KEY idx_psi_section (section_id),
+  KEY idx_psi_company (company_id),
+  KEY idx_psi_product (product_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS package_choices (

@@ -4,6 +4,7 @@ require_once __DIR__ . '/inc/auth.php';
 require_once __DIR__ . '/inc/helpers.php';
 require_once __DIR__ . '/inc/analytics.php';
 require_once __DIR__ . '/inc/layout.php';
+require_once __DIR__ . '/inc/packages.php';
 
 // Safety net for older inc/helpers.php after a partial deploy
 if (!function_exists('db_table_exists')) {
@@ -45,8 +46,10 @@ $sections = tenant_all(
     $cid, [(int) $package['id']]
 );
 
-// Pre-load choices for all sections in one query
+// Pre-load image-only legacy choices for all sections in one query
 $choices_by_section = [];
+// Pre-load product items per section (real catalog products)
+$items_by_section = [];
 if ($sections) {
     $sids = array_column($sections, 'id');
     $ph   = implode(',', array_fill(0, count($sids), '?'));
@@ -58,7 +61,22 @@ if ($sections) {
     foreach ($rows as $r) {
         $choices_by_section[(int) $r['section_id']][] = $r;
     }
+
+    if (db_table_exists('package_section_items')) {
+        $item_rows = package_items_for_package((int) $package['id'], $cid);
+        foreach ($item_rows as $r) {
+            $items_by_section[(int) $r['section_id']][] = $r;
+        }
+    }
 }
+
+// Auto-computed retail price (used as strikethrough anchor when was_price is blank)
+$retail_price = db_table_exists('package_section_items')
+    ? package_retail_price((int) $package['id'], $cid)
+    : 0.0;
+$strike_price = $package['was_price'] !== null
+    ? (float) $package['was_price']
+    : $retail_price;
 
 $features = [];
 if (!empty($package['features_json'])) {
@@ -207,8 +225,16 @@ section.pkg-section .desc strong { color: var(--c-primary); }
           <div class="from">From only</div>
           <div class="price">RM <?= number_format((float) $package['price'], 0) ?></div>
         </div>
-        <?php if ($package['was_price'] !== null): ?>
-          <span class="was">RM <?= number_format((float) $package['was_price'], 0) ?></span>
+        <?php if ($strike_price > 0 && $strike_price > (float) $package['price']):
+          $savings = $strike_price - (float) $package['price'];
+        ?>
+          <div>
+            <span class="was">RM <?= number_format($strike_price, 0) ?></span>
+            <div style="color:#fef3c7;font-size:14px;margin-top:4px;font-weight:700;">
+              Save RM <?= number_format($savings, 0) ?>
+              (<?= round($savings / $strike_price * 100) ?>% off)
+            </div>
+          </div>
         <?php endif; ?>
       </div>
     <?php endif; ?>
@@ -245,16 +271,61 @@ section.pkg-section .desc strong { color: var(--c-primary); }
 <?php endif; ?>
 
 <!-- SECTIONS -->
+<style>
+.pkg-items { list-style:none; padding:0; margin: 12px 0 0; display:grid; gap: 8px; }
+.pkg-items li { display:flex; align-items:center; gap:10px; padding: 8px 0; border-bottom: 1px solid rgba(0,0,0,.06); }
+.pkg-items li:last-child { border-bottom: 0; }
+.pkg-items .thumb { width: 44px; height: 44px; border-radius:8px; background:#eee; overflow:hidden; flex-shrink:0; }
+.pkg-items .thumb img { width:100%; height:100%; object-fit:cover; }
+.pkg-items .name { flex:1; font-weight: 600; color:#111; }
+.pkg-items .qty  { color:#6b7280; font-size: 13px; }
+.pkg-items .price{ color: var(--c-primary); font-weight:700; white-space:nowrap; }
+.pkg-section .kind-pill { display:inline-block; padding:2px 10px; border-radius:999px; font-size:11px;
+  font-weight:700; letter-spacing:.04em; text-transform: uppercase; margin-left: 8px; vertical-align: middle; }
+.pkg-section .kind-pill.choice  { background:#fef3c7; color:#b45309; }
+.pkg-section .kind-pill.included{ background:#dcfce7; color:#166534; }
+</style>
 <?php foreach ($sections as $i => $s):
+  $sec_items     = $items_by_section[(int) $s['id']] ?? [];
   $section_choices = $choices_by_section[(int) $s['id']] ?? [];
   $flip = ($i % 2 === 1);
+  $kind = $s['kind'] ?? 'included';
 ?>
   <section class="pkg-section <?= $flip ? 'flip' : '' ?>">
     <div class="container">
       <div class="head">
         <div class="text">
-          <h2><?= e($s['title']) ?></h2>
-          <?php if (!empty($s['description'])): ?>
+          <h2>
+            <?= e($s['title']) ?>
+            <?php if ($kind === 'choice'): ?>
+              <span class="kind-pill choice">Pick one</span>
+            <?php endif; ?>
+          </h2>
+
+          <?php if ($sec_items): ?>
+            <ul class="pkg-items">
+              <?php foreach ($sec_items as $it):
+                $unit = product_unit_price($it);
+                $qty  = (int) $it['quantity'];
+                $line = $unit * $qty;
+              ?>
+                <li>
+                  <div class="thumb">
+                    <?php if (!empty($it['img'])): ?>
+                      <img src="<?= e($it['img']) ?>" alt="" loading="lazy">
+                    <?php endif; ?>
+                  </div>
+                  <span class="name"><?= e($it['product_name']) ?></span>
+                  <?php if ($qty > 1): ?>
+                    <span class="qty">× <?= $qty ?></span>
+                  <?php endif; ?>
+                  <?php if ($unit > 0): ?>
+                    <span class="price">RM <?= number_format($line, 0) ?></span>
+                  <?php endif; ?>
+                </li>
+              <?php endforeach; ?>
+            </ul>
+          <?php elseif (!empty($s['description'])): ?>
             <div class="desc"><?= e($s['description']) ?></div>
           <?php endif; ?>
         </div>

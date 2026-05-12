@@ -2,6 +2,7 @@
 require_once __DIR__ . '/_bootstrap.php';
 require_once __DIR__ . '/../inc/db.php';
 require_once __DIR__ . '/../inc/upload.php';
+require_once __DIR__ . '/../inc/packages.php';
 
 // Safety net for older inc/helpers.php after a partial deploy
 if (!function_exists('db_table_exists')) {
@@ -128,12 +129,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     redirect('/company-admin/package-edit.php?id=' . $id);
 }
 
+$items_table_ready = db_table_exists('package_section_items');
+$item_count_sql = $items_table_ready
+    ? '(SELECT COUNT(*) FROM package_section_items WHERE section_id = s.id) AS item_count,'
+    : '0 AS item_count,';
 $sections = $id ? tenant_all(
-    'SELECT s.*,
+    "SELECT s.*,
+            {$item_count_sql}
             (SELECT COUNT(*) FROM package_choices WHERE section_id = s.id) AS choice_count
        FROM package_sections s
       WHERE s.company_id = ? AND s.package_id = ?
-      ORDER BY s.sort_order, s.id',
+      ORDER BY s.sort_order, s.id",
     $CID, [$id]
 ) : [];
 
@@ -187,9 +193,25 @@ ca_open($package ? 'Edit Package' : 'New Package');
                value="<?= e($package['price'] ?? '') ?>" placeholder="6988">
       </div>
       <div class="col">
-        <label>"Was" price (RM) <span class="muted">(strikethrough anchor)</span></label>
+        <label>"Was" price (RM) <span class="muted">(strikethrough anchor — leave blank to auto-use retail)</span></label>
         <input class="input" name="was_price" type="number" step="0.01" min="0"
                value="<?= e($package['was_price'] ?? '') ?>" placeholder="30000">
+        <?php if ($id):
+          $retail_auto = package_retail_price($id, $CID);
+          if ($retail_auto > 0):
+        ?>
+          <p class="muted" style="margin-top:4px;font-size:12px;">
+            🧮 Auto retail from selected products:
+            <strong>RM <?= number_format($retail_auto, 0) ?></strong>
+            <?php if ($package['price'] !== null):
+              $savings = $retail_auto - (float) $package['price'];
+              if ($savings > 0): ?>
+              · customer saves
+              <strong style="color:#16a34a;">RM <?= number_format($savings, 0) ?></strong>
+              (<?= round($savings / $retail_auto * 100) ?>% off)
+            <?php endif; endif; ?>
+          </p>
+        <?php endif; endif; ?>
       </div>
       <div class="col">
         <label>Status</label>
@@ -283,7 +305,7 @@ ca_open($package ? 'Edit Package' : 'New Package');
   </p>
 
   <table>
-    <tr><th></th><th>Title</th><th>Description</th><th>Choices</th><th>Sort</th><th></th></tr>
+    <tr><th></th><th>Title</th><th>Kind</th><th>Items</th><th>Sort</th><th></th></tr>
     <?php if (!$sections): ?>
       <tr><td colspan="6" class="muted center" style="padding:14px;">No sections yet — add one below.</td></tr>
     <?php endif; ?>
@@ -295,9 +317,23 @@ ca_open($package ? 'Edit Package' : 'New Package');
                  style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#eee;">
           <?php endif; ?>
         </td>
-        <td><strong><?= e($s['title']) ?></strong></td>
-        <td class="muted" style="font-size:13px;"><?= nl2br(e($s['description'] ?? '')) ?></td>
-        <td><?= (int) $s['choice_count'] ?></td>
+        <td>
+          <strong><?= e($s['title']) ?></strong>
+          <?php if (!empty($s['description'])): ?>
+            <div class="muted" style="font-size:12px;"><?= nl2br(e($s['description'])) ?></div>
+          <?php endif; ?>
+        </td>
+        <td>
+          <span class="badge <?= ($s['kind'] ?? 'included') === 'choice' ? '' : 'green' ?>">
+            <?= e($s['kind'] ?? 'included') ?>
+          </span>
+        </td>
+        <td>
+          <?= (int) ($s['item_count'] ?? 0) ?> products
+          <?php if ((int) ($s['choice_count'] ?? 0) > 0): ?>
+            <div class="muted" style="font-size:11px;">+<?= (int) $s['choice_count'] ?> image-only</div>
+          <?php endif; ?>
+        </td>
         <td><?= (int) $s['sort_order'] ?></td>
         <td class="actions">
           <a class="btn outline" href="/company-admin/package-section-edit.php?id=<?= (int) $s['id'] ?>">Edit</a>

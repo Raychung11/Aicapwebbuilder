@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/_bootstrap.php';
 require_once __DIR__ . '/../inc/db.php';
+require_once __DIR__ . '/../inc/packages.php';
 
 // Safety net: define db_table_exists() locally if inc/helpers.php on the
 // server is older than this file (partial deploy).
@@ -163,11 +164,22 @@ ca_open('Furniture Packages');
           <?php endif; ?>
         </td>
         <td>
+          <?php
+            $retail = package_retail_price((int) $p['id'], $CID);
+            $strike = $p['was_price'] !== null ? (float) $p['was_price'] : $retail;
+          ?>
           <?php if ($p['price'] !== null): ?>
             <strong>RM <?= number_format((float) $p['price'], 0) ?></strong>
-            <?php if ($p['was_price'] !== null): ?>
+            <?php if ($strike > 0 && $strike > (float) $p['price']): ?>
               <div class="muted" style="font-size:12px;text-decoration:line-through;">
-                RM <?= number_format((float) $p['was_price'], 0) ?>
+                RM <?= number_format($strike, 0) ?>
+                <?php if ($p['was_price'] === null): ?>
+                  <span style="text-decoration:none;color:#9ca3af;">(auto)</span>
+                <?php endif; ?>
+              </div>
+            <?php elseif ($retail > 0): ?>
+              <div class="muted" style="font-size:12px;">
+                Retail <span style="color:#9ca3af;">(auto)</span>: RM <?= number_format($retail, 0) ?>
               </div>
             <?php endif; ?>
           <?php else: ?><span class="muted">—</span><?php endif; ?>

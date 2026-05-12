@@ -47,6 +47,7 @@ try {
         ['salespersons',   'commission_rate', "DECIMAL(5,2) DEFAULT NULL AFTER referral_code"],
         ['voucher_claims', 'salesperson_id',  "INT UNSIGNED DEFAULT NULL AFTER member_id"],
         ['vouchers',       'marketing_script',"TEXT AFTER description"],
+        ['package_sections','kind',           "ENUM('included','choice') NOT NULL DEFAULT 'included' AFTER title"],
     ];
     foreach ($columns_to_add as [$tbl, $col, $type]) {
         $exists = db_one(
