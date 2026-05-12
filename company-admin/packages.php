@@ -102,6 +102,12 @@ $rows = tenant_all(
     $CID
 );
 
+// Absolute URL base for Preview links — the admin may be on aicap.my,
+// but previewing a tenant page must land on the tenant subdomain.
+$tenant_base = !empty($company['custom_domain'])
+    ? APP_URL_SCHEME . '://' . $company['custom_domain']
+    : APP_URL_SCHEME . '://' . $company['subdomain'] . '.' . APP_BASE_DOMAIN;
+
 ca_open('Furniture Packages');
 ?>
 <div class="card">
@@ -174,7 +180,7 @@ ca_open('Furniture Packages');
         </td>
         <td class="actions">
           <a class="btn outline" href="/company-admin/package-edit.php?id=<?= (int) $p['id'] ?>">Edit</a>
-          <a class="btn outline" href="/package.php?id=<?= (int) $p['id'] ?>" target="_blank" rel="noopener">Preview</a>
+          <a class="btn outline" href="<?= e($tenant_base) ?>/package.php?id=<?= (int) $p['id'] ?>" target="_blank" rel="noopener">Preview</a>
           <form method="post" style="display:inline;" onsubmit="return confirm('Delete this package, all sections and choices? This cannot be undone.')">
             <?= csrf_field() ?>
             <input type="hidden" name="action" value="delete">

@@ -123,6 +123,12 @@ $sections = $id ? tenant_all(
     $CID, [$id]
 ) : [];
 
+// Absolute URL base for the Preview link — the admin may be on aicap.my
+// where there's no tenant context, so we point at the tenant's subdomain.
+$tenant_base = !empty($company['custom_domain'])
+    ? APP_URL_SCHEME . '://' . $company['custom_domain']
+    : APP_URL_SCHEME . '://' . $company['subdomain'] . '.' . APP_BASE_DOMAIN;
+
 // Decode existing features for the textarea
 $features_raw = '';
 if ($package && !empty($package['features_json'])) {
@@ -244,7 +250,7 @@ ca_open($package ? 'Edit Package' : 'New Package');
           <button class="btn primary" type="submit">Save Package</button>
           <a class="btn outline" href="/company-admin/packages.php">Back</a>
           <?php if ($package): ?>
-            <a class="btn outline" href="/package.php?id=<?= (int) $package['id'] ?>" target="_blank" rel="noopener">Preview ↗</a>
+            <a class="btn outline" href="<?= e($tenant_base) ?>/package.php?id=<?= (int) $package['id'] ?>" target="_blank" rel="noopener">Preview ↗</a>
           <?php endif; ?>
         </p>
       </div>
