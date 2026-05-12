@@ -3,6 +3,20 @@ require_once __DIR__ . '/_bootstrap.php';
 require_once __DIR__ . '/../inc/db.php';
 require_once __DIR__ . '/../inc/upload.php';
 
+// Safety net for older inc/helpers.php after a partial deploy
+if (!function_exists('db_table_exists')) {
+    function db_table_exists(string $name): bool {
+        try {
+            $row = db_one(
+                'SELECT 1 AS x FROM information_schema.TABLES
+                  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? LIMIT 1',
+                [$name]
+            );
+            return (bool) $row;
+        } catch (Throwable $e) { return false; }
+    }
+}
+
 if (!db_table_exists('packages')) {
     flash_set('error', 'Run /install.php once to enable Packages, then refresh.');
     redirect('/company-admin/packages.php');
