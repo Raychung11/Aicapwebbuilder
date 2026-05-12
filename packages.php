@@ -83,7 +83,12 @@ layout_head($company, 'Packages', 'packages', $page_meta);
     <?php else: ?>
       <div class="grid" style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));">
         <?php foreach ($packages as $p): ?>
-          <a class="pkg-card" href="/package.php?id=<?= (int) $p['id'] ?>">
+          <?php
+            $card_url = !empty($p['slug'])
+                ? '/packages/' . rawurlencode($p['slug'])
+                : '/package.php?id=' . (int) $p['id'];
+          ?>
+          <a class="pkg-card" href="<?= e($card_url) ?>">
             <div class="img">
               <?php if (!empty($p['hero_image'])): ?>
                 <img src="<?= e($p['hero_image']) ?>" alt="<?= e($p['title']) ?>" loading="lazy">

@@ -48,6 +48,9 @@ try {
         ['voucher_claims', 'salesperson_id',  "INT UNSIGNED DEFAULT NULL AFTER member_id"],
         ['vouchers',       'marketing_script',"TEXT AFTER description"],
         ['package_sections','kind',           "ENUM('included','choice') NOT NULL DEFAULT 'included' AFTER title"],
+        ['packages',       'slug',             "VARCHAR(190) DEFAULT NULL AFTER title"],
+        ['packages',       'meta_title',       "VARCHAR(255) DEFAULT NULL AFTER cta_url"],
+        ['packages',       'meta_description', "TEXT AFTER meta_title"],
     ];
     foreach ($columns_to_add as [$tbl, $col, $type]) {
         $exists = db_one(

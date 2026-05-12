@@ -84,35 +84,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
+    $title = trim((string) input('title'));
+    // Slug: user input (sanitised) or auto-generated from title; ensure unique per tenant.
+    $slug  = slugify(trim((string) input('slug', '')) ?: $title);
+    if ($slug !== '') {
+        $base = $slug; $i = 1;
+        $where = $id ? ' AND id != ?' : '';
+        $params = $id ? [$CID, $slug, $id] : [$CID, $slug];
+        while (db_one("SELECT id FROM packages WHERE company_id = ? AND slug = ?{$where} LIMIT 1", $params)) {
+            $slug = $base . '-' . (++$i);
+            $params = $id ? [$CID, $slug, $id] : [$CID, $slug];
+        }
+    } else {
+        $slug = null;
+    }
+
     $f = [
-        'title'         => trim((string) input('title')),
-        'subtitle'      => trim((string) input('subtitle', '')) ?: null,
-        'description'   => (string) input('description', '') ?: null,
-        'badge'         => trim((string) input('badge', '')) ?: null,
-        'price'         => input('price') !== '' ? (float) input('price') : null,
-        'was_price'     => input('was_price') !== '' ? (float) input('was_price') : null,
-        'features_json' => $features ? json_encode($features, JSON_UNESCAPED_UNICODE) : null,
-        'pwp_blurb'     => trim((string) input('pwp_blurb', '')) ?: null,
-        'cta_text'      => trim((string) input('cta_text', '')) ?: null,
-        'cta_url'       => trim((string) input('cta_url', '')) ?: null,
-        'status'        => in_array(input('status'), ['active','draft','archived'], true) ? input('status') : 'draft',
-        'is_featured'   => !empty($_POST['is_featured']) ? 1 : 0,
-        'sort_order'    => (int) (input('sort_order') ?: 0),
+        'title'            => $title,
+        'slug'             => $slug,
+        'subtitle'         => trim((string) input('subtitle', '')) ?: null,
+        'description'      => (string) input('description', '') ?: null,
+        'badge'            => trim((string) input('badge', '')) ?: null,
+        'price'            => input('price') !== '' ? (float) input('price') : null,
+        'was_price'        => input('was_price') !== '' ? (float) input('was_price') : null,
+        'features_json'    => $features ? json_encode($features, JSON_UNESCAPED_UNICODE) : null,
+        'pwp_blurb'        => trim((string) input('pwp_blurb', '')) ?: null,
+        'cta_text'         => trim((string) input('cta_text', '')) ?: null,
+        'cta_url'          => trim((string) input('cta_url', '')) ?: null,
+        'meta_title'       => trim((string) input('meta_title', '')) ?: null,
+        'meta_description' => trim((string) input('meta_description', '')) ?: null,
+        'status'           => in_array(input('status'), ['active','draft','archived'], true) ? input('status') : 'draft',
+        'is_featured'      => !empty($_POST['is_featured']) ? 1 : 0,
+        'sort_order'       => (int) (input('sort_order') ?: 0),
     ];
 
     if ($id) {
         db_exec(
-            'UPDATE packages SET title=?, subtitle=?, description=?, badge=?, price=?, was_price=?,
+            'UPDATE packages SET title=?, slug=?, subtitle=?, description=?, badge=?, price=?, was_price=?,
                                  features_json=?, pwp_blurb=?, cta_text=?, cta_url=?,
+                                 meta_title=?, meta_description=?,
                                  status=?, is_featured=?, sort_order=?
               WHERE company_id=? AND id=?',
             [...array_values($f), $CID, $id]
         );
     } else {
         $id = db_insert(
-            'INSERT INTO packages (company_id, title, subtitle, description, badge, price, was_price,
-                                   features_json, pwp_blurb, cta_text, cta_url, status, is_featured, sort_order)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            'INSERT INTO packages (company_id, title, slug, subtitle, description, badge, price, was_price,
+                                   features_json, pwp_blurb, cta_text, cta_url,
+                                   meta_title, meta_description,
+                                   status, is_featured, sort_order)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
             [$CID, ...array_values($f)]
         );
     }
@@ -172,17 +193,25 @@ ca_open($package ? 'Edit Package' : 'New Package');
       <div class="col">
         <label>Title *</label>
         <input class="input" name="title" required value="<?= e($package['title'] ?? '') ?>"
-               placeholder="e.g. Package 2 Rooms">
+               placeholder="e.g. Package 2 Rooms — Fully Furnished">
       </div>
       <div class="col">
-        <label>Subtitle</label>
-        <input class="input" name="subtitle" value="<?= e($package['subtitle'] ?? '') ?>"
-               placeholder="e.g. Get 2-3 rooms fully furnished">
+        <label>Slug <span class="muted">(URL-friendly, auto-filled from title)</span></label>
+        <input class="input" name="slug" value="<?= e($package['slug'] ?? '') ?>"
+               placeholder="e.g. package-2-rooms">
       </div>
       <div class="col">
         <label>Badge <span class="muted">(optional pill)</span></label>
         <input class="input" name="badge" value="<?= e($package['badge'] ?? '') ?>"
                placeholder="e.g. MOST POPULAR / LIMITED OFFER">
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col">
+        <label>Subtitle</label>
+        <input class="input" name="subtitle" value="<?= e($package['subtitle'] ?? '') ?>"
+               placeholder="e.g. Get 2-3 rooms fully furnished">
       </div>
     </div>
 
@@ -260,6 +289,27 @@ ca_open($package ? 'Edit Package' : 'New Package');
       </div>
     </div>
 
+    <div style="margin-top:18px;border-top:1px solid #e5e7eb;padding-top:14px;">
+      <h4 style="margin:0 0 4px;">SEO &amp; Share preview</h4>
+      <p class="muted" style="margin:0 0 10px;font-size:13px;">
+        Controls how the package shows in Google results and on WhatsApp /
+        Facebook / Twitter link previews. Leave both blank — the system will
+        auto-build a smart title with the price and a description from your
+        subtitle + features.
+      </p>
+      <label>Meta title <span class="muted">(aim for ~60 chars)</span></label>
+      <input class="input" name="meta_title" maxlength="255"
+             placeholder="<?php
+               $sample_title = ($package['title'] ?? 'Package') ;
+               if (!empty($package['price'])) $sample_title .= ' — From RM ' . number_format((float)$package['price'], 0);
+               echo e($sample_title . ' | ' . $company['name']);
+             ?>"
+             value="<?= e($package['meta_title'] ?? '') ?>">
+      <label>Meta description <span class="muted">(aim for 120–160 chars)</span></label>
+      <textarea class="input" name="meta_description" rows="2" maxlength="500"
+                placeholder="e.g. Don't spend RM 30K on furniture. Get 2-3 rooms fully furnished from only RM 6,988. Premium Quality · Stylish Design · Delivery & Installation."><?= e($package['meta_description'] ?? '') ?></textarea>
+    </div>
+
     <div class="row" style="align-items:flex-start;">
       <div class="col" style="flex:0 0 200px;">
         <label>Hero image</label>
@@ -286,7 +336,12 @@ ca_open($package ? 'Edit Package' : 'New Package');
           <button class="btn primary" type="submit">Save Package</button>
           <a class="btn outline" href="/company-admin/packages.php">Back</a>
           <?php if ($package): ?>
-            <a class="btn outline" href="<?= e($tenant_base) ?>/package.php?id=<?= (int) $package['id'] ?>" target="_blank" rel="noopener">Preview ↗</a>
+            <?php
+              $preview_path = !empty($package['slug'])
+                  ? '/packages/' . rawurlencode($package['slug'])
+                  : '/package.php?id=' . (int) $package['id'];
+            ?>
+            <a class="btn outline" href="<?= e($tenant_base . $preview_path) ?>" target="_blank" rel="noopener">Preview ↗</a>
           <?php endif; ?>
         </p>
       </div>

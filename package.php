@@ -23,11 +23,22 @@ if (!function_exists('db_table_exists')) {
 $company = require_company();
 $cid     = (int) $company['id'];
 $id      = (int) input('id', 0);
+$slug    = trim((string) input('slug', ''));
 
-$package = ($id && db_table_exists('packages')) ? tenant_one(
-    'SELECT * FROM packages WHERE company_id = ? AND id = ? AND status = "active" LIMIT 1',
-    $cid, [$id]
-) : null;
+$package = null;
+if (db_table_exists('packages')) {
+    if ($slug !== '') {
+        $package = tenant_one(
+            'SELECT * FROM packages WHERE company_id = ? AND slug = ? AND status = "active" LIMIT 1',
+            $cid, [$slug]
+        );
+    } elseif ($id) {
+        $package = tenant_one(
+            'SELECT * FROM packages WHERE company_id = ? AND id = ? AND status = "active" LIMIT 1',
+            $cid, [$id]
+        );
+    }
+}
 
 if (!$package) {
     http_response_code(404);
@@ -97,9 +108,44 @@ if (empty($cta_url)) {
 }
 $cta_text = $package['cta_text'] ?: 'Book This Package';
 
+// ----- Smart SEO defaults -----
+// Title: explicit meta_title → "<title> — From RM N | <company>" → "<title> | <company>"
+$auto_title = $package['title'];
+if ($package['price'] !== null) {
+    $auto_title .= ' — From RM ' . number_format((float) $package['price'], 0);
+}
+$auto_title .= ' | ' . $company['name'];
+
+// Description: explicit meta_description → subtitle + features + savings
+$auto_desc_parts = [];
+if (!empty($package['subtitle']))          $auto_desc_parts[] = $package['subtitle'];
+elseif (!empty($package['description']))   $auto_desc_parts[] = mb_substr(strip_tags($package['description']), 0, 120);
+
+if ($package['price'] !== null) {
+    $price_line = 'From RM ' . number_format((float) $package['price'], 0);
+    $strike_calc = $package['was_price'] !== null
+        ? (float) $package['was_price']
+        : (db_table_exists('package_section_items') ? package_retail_price((int) $package['id'], $cid) : 0.0);
+    if ($strike_calc > 0 && $strike_calc > (float) $package['price']) {
+        $savings = $strike_calc - (float) $package['price'];
+        $pct     = round($savings / $strike_calc * 100);
+        $price_line .= ' (save RM ' . number_format($savings, 0) . ', ' . $pct . '% off)';
+    }
+    $auto_desc_parts[] = $price_line;
+}
+
+if (!empty($features)) {
+    $auto_desc_parts[] = implode(' · ', array_map(
+        fn($f) => $f['label'] ?? '',
+        array_slice($features, 0, 4)
+    ));
+}
+$auto_desc = trim(implode('. ', array_filter($auto_desc_parts)));
+$auto_desc = mb_substr($auto_desc, 0, 250);
+
 $page_meta = [
-    'title'       => $package['title'] . ' | ' . $company['name'],
-    'description' => $package['subtitle'] ?: ($package['description'] ?: 'Furniture package'),
+    'title'       => !empty($package['meta_title'])       ? $package['meta_title']       : $auto_title,
+    'description' => !empty($package['meta_description']) ? $package['meta_description'] : $auto_desc,
     'image'       => $package['hero_image'] ?: ($company['og_image'] ?: ($company['logo'] ?? '')),
     'type'        => 'product',
 ];

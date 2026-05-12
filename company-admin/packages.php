@@ -209,7 +209,12 @@ ca_open('Furniture Packages');
         </td>
         <td class="actions">
           <a class="btn outline" href="/company-admin/package-edit.php?id=<?= (int) $p['id'] ?>">Edit</a>
-          <a class="btn outline" href="<?= e($tenant_base) ?>/package.php?id=<?= (int) $p['id'] ?>" target="_blank" rel="noopener">Preview</a>
+          <?php
+            $preview_path = !empty($p['slug'])
+                ? '/packages/' . rawurlencode($p['slug'])
+                : '/package.php?id=' . (int) $p['id'];
+          ?>
+          <a class="btn outline" href="<?= e($tenant_base . $preview_path) ?>" target="_blank" rel="noopener">Preview</a>
           <form method="post" style="display:inline;" onsubmit="return confirm('Delete this package, all sections and choices? This cannot be undone.')">
             <?= csrf_field() ?>
             <input type="hidden" name="action" value="delete">
