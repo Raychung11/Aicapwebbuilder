@@ -41,30 +41,127 @@
 }
 .upload-hint a { color: #2563eb; text-decoration: none; }
 .upload-hint a:hover { text-decoration: underline; }
+.upload-hint .ok { color: #16a34a; font-weight: 600; }
 </style>
 <script>
 (function () {
   var MB         = 1024 * 1024;
   var MAX_FILE   = 5 * MB;   // matches UPLOAD_MAX_BYTES
   var MAX_TOTAL  = 8 * MB;   // matches UPLOAD_MAX_TOTAL_BYTES / nginx default
+  var SHRINK_AT  = 1.5 * MB; // skip auto-compress for files smaller than this
+  var MAX_WIDTH  = 1600;     // target longest edge after resize
+  var JPEG_Q     = 0.85;
 
   function fmt(b) { return (b / MB).toFixed(1) + ' MB'; }
 
-  // Auto-inject the size hint under every file input on admin pages.
+  // ---------- Auto-compress image files in the browser ----------
+  // Resizes / re-encodes to JPEG so the POST body fits under
+  // Hostinger's nginx client_max_body_size without manual work.
+  function compressImage(file) {
+    return new Promise(function (resolve) {
+      if (!file || !file.type || file.type.indexOf('image/') !== 0) return resolve(file);
+      if (file.size < SHRINK_AT) return resolve(file);
+
+      var img = new Image();
+      var url = URL.createObjectURL(file);
+      img.onload = function () {
+        URL.revokeObjectURL(url);
+        var w = img.naturalWidth || img.width;
+        var h = img.naturalHeight || img.height;
+        var scale = Math.min(1, MAX_WIDTH / Math.max(w, h));
+        w = Math.round(w * scale);
+        h = Math.round(h * scale);
+        var c = document.createElement('canvas');
+        c.width = w; c.height = h;
+        var ctx = c.getContext('2d');
+        // Flatten transparency to white so PNGs become smaller JPEGs.
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, w, h);
+        ctx.drawImage(img, 0, 0, w, h);
+        c.toBlob(function (blob) {
+          if (!blob || blob.size >= file.size) return resolve(file);
+          var name = (file.name || 'image').replace(/\.[^.]+$/, '') + '.jpg';
+          resolve(new File([blob], name, { type: 'image/jpeg', lastModified: Date.now() }));
+        }, 'image/jpeg', JPEG_Q);
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); resolve(file); };
+      img.src = url;
+    });
+  }
+
+  function replaceFiles(input, files) {
+    try {
+      var dt = new DataTransfer();
+      files.forEach(function (f) { dt.items.add(f); });
+      input.files = dt.files;
+      return true;
+    } catch (e) { return false; }
+  }
+
+  function setStatus(input, html) {
+    var hint = input.nextElementSibling;
+    if (hint && hint.classList && hint.classList.contains('upload-hint')) {
+      var status = hint.querySelector('.compress-status');
+      if (!status) {
+        status = document.createElement('span');
+        status.className = 'compress-status';
+        status.style.display = 'block';
+        status.style.marginTop = '4px';
+        hint.appendChild(status);
+      }
+      status.innerHTML = html;
+    }
+  }
+
+  function attachCompress(input) {
+    if (input.dataset.compressBound) return;
+    input.dataset.compressBound = '1';
+    input.addEventListener('change', async function () {
+      var files = Array.prototype.slice.call(input.files || []);
+      if (!files.length) return;
+      var originalTotal = files.reduce(function (s, f) { return s + f.size; }, 0);
+      setStatus(input, '⏳ Compressing image' + (files.length > 1 ? 's' : '') + '…');
+      var processed = [];
+      for (var i = 0; i < files.length; i++) {
+        try { processed.push(await compressImage(files[i])); }
+        catch (e) { processed.push(files[i]); }
+      }
+      var newTotal = processed.reduce(function (s, f) { return s + f.size; }, 0);
+      if (newTotal < originalTotal && replaceFiles(input, processed)) {
+        var savedMB = ((originalTotal - newTotal) / MB).toFixed(2);
+        setStatus(input,
+          '<span class="ok">✅ Auto-compressed — saved ' + savedMB + ' MB. ' +
+          'New total: ' + fmt(newTotal) + '.</span>'
+        );
+      } else if (newTotal > MAX_TOTAL) {
+        setStatus(input,
+          '⚠️ Total still ' + fmt(newTotal) + ' — please pick fewer or smaller images.'
+        );
+      } else {
+        setStatus(input, '');
+      }
+    });
+  }
+
+  // Auto-inject hints + bind auto-compress to every existing file input.
   document.querySelectorAll('input[type=file]').forEach(function (inp) {
-    if (inp.dataset.noHint) return;
-    var next = inp.nextElementSibling;
-    if (next && next.classList && next.classList.contains('upload-hint')) return;
-    var hint = document.createElement('p');
-    hint.className = 'upload-hint';
-    hint.innerHTML =
-      '📷 <strong>Max 5 MB per file, 8 MB total per save.</strong> ' +
-      'Compress large photos with ' +
-      '<a href="https://tinypng.com" target="_blank" rel="noopener">tinypng.com</a> ' +
-      'or <a href="https://squoosh.app" target="_blank" rel="noopener">squoosh.app</a> first.';
-    inp.parentNode.insertBefore(hint, inp.nextSibling);
+    if (!inp.dataset.noHint) {
+      var next = inp.nextElementSibling;
+      var hasHint = next && next.classList && next.classList.contains('upload-hint');
+      if (!hasHint) {
+        var hint = document.createElement('p');
+        hint.className = 'upload-hint';
+        hint.innerHTML =
+          '📷 <strong>Max 5 MB per file, 8 MB total per save.</strong> ' +
+          'Large photos are <strong>auto-compressed in your browser</strong> before upload — ' +
+          'no manual resize needed.';
+        inp.parentNode.insertBefore(hint, inp.nextSibling);
+      }
+    }
+    attachCompress(inp);
   });
 
+  // ---------- Final size guard on form submit ----------
   document.querySelectorAll('form').forEach(function (form) {
     if (!form.querySelector('input[type=file]')) return;
 
@@ -83,10 +180,9 @@
       if (overs.length) {
         e.preventDefault();
         alert(
-          'These files are larger than 5 MB and will be rejected:\n\n' +
+          'These files are still larger than 5 MB after auto-compression:\n\n' +
           overs.join('\n') +
-          '\n\nPlease compress them first (try tinypng.com or squoosh.app) ' +
-          'and try again.'
+          '\n\nThe images are unusually large. Pick a smaller resolution photo.'
         );
         return;
       }
@@ -94,10 +190,8 @@
       if (total > MAX_TOTAL) {
         e.preventDefault();
         alert(
-          'Your total upload is ' + fmt(total) + ', which exceeds the 8 MB ' +
-          'limit per save (the server will refuse it with a 405).\n\n' +
-          'Try uploading fewer images at a time, or compress them so the ' +
-          'total stays under 8 MB.'
+          'Total upload is ' + fmt(total) + ' (limit 8 MB per save).\n\n' +
+          'Try uploading fewer images at a time.'
         );
         return;
       }
