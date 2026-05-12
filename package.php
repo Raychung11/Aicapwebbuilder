@@ -150,6 +150,47 @@ $page_meta = [
     'type'        => 'product',
 ];
 
+// ----- Pre-written share message + canonical URL for buttons -----
+$share_lines = [];
+$share_lines[] = '🏡 *' . $package['title'] . '*';
+if (!empty($package['subtitle'])) $share_lines[] = $package['subtitle'];
+$share_lines[] = '';
+if ($package['price'] !== null) {
+    $price_line = 'From only RM ' . number_format((float) $package['price'], 0);
+    $strike_calc = $package['was_price'] !== null
+        ? (float) $package['was_price']
+        : (db_table_exists('package_section_items') ? package_retail_price((int) $package['id'], $cid) : 0.0);
+    if ($strike_calc > 0 && $strike_calc > (float) $package['price']) {
+        $savings = $strike_calc - (float) $package['price'];
+        $pct     = round($savings / $strike_calc * 100);
+        $price_line .= ' — save RM ' . number_format($savings, 0) . ' (' . $pct . '% off!)';
+    }
+    $share_lines[] = '💰 ' . $price_line;
+}
+if (!empty($features)) {
+    foreach (array_slice($features, 0, 6) as $f) {
+        $share_lines[] = '✅ ' . ($f['label'] ?? '');
+    }
+}
+if (!empty($package['pwp_blurb'])) {
+    $share_lines[] = '';
+    $share_lines[] = '🎁 ' . $package['pwp_blurb'];
+}
+
+$share_host = !empty($company['custom_domain'])
+    ? $company['custom_domain']
+    : ($company['subdomain'] . '.' . APP_BASE_DOMAIN);
+$share_url = ($_SERVER['HTTPS'] ?? 'off') !== 'off' ? 'https://' : 'http://';
+$share_url .= $share_host;
+$share_url .= !empty($package['slug'])
+    ? '/packages/' . rawurlencode($package['slug'])
+    : '/package.php?id=' . (int) $package['id'];
+
+$share_lines[] = '';
+$share_lines[] = '👇 See details';
+$share_lines[] = $share_url;
+$share_message = implode("\n", $share_lines);
+
 layout_head($company, $package['title'], 'packages', $page_meta);
 ?>
 <style>
@@ -398,6 +439,118 @@ section.pkg-section .desc strong { color: var(--c-primary); }
     </div>
   </section>
 <?php endforeach; ?>
+
+<!-- SHARE -->
+<section class="pkg-share">
+  <div class="container">
+    <h2 style="margin:0 0 6px;font-size:clamp(22px,3.4vw,28px);">Share this deal 🔗</h2>
+    <p class="muted" style="margin:0 0 18px;">
+      Help a friend save on furniture — one tap to share with the pre-written message below.
+    </p>
+
+    <div class="share-btns">
+      <a class="sbtn wa" target="_blank" rel="noopener"
+         href="https://wa.me/?text=<?= rawurlencode($share_message) ?>"
+         data-share-via="whatsapp">💬 WhatsApp</a>
+      <a class="sbtn tg" target="_blank" rel="noopener"
+         href="https://t.me/share/url?url=<?= rawurlencode($share_url) ?>&amp;text=<?= rawurlencode($share_message) ?>"
+         data-share-via="telegram">✈️ Telegram</a>
+      <a class="sbtn fb" target="_blank" rel="noopener"
+         href="https://www.facebook.com/sharer/sharer.php?u=<?= rawurlencode($share_url) ?>"
+         data-share-via="facebook">f Facebook</a>
+      <a class="sbtn tw" target="_blank" rel="noopener"
+         href="https://twitter.com/intent/tweet?text=<?= rawurlencode($share_message) ?>"
+         data-share-via="twitter">𝕏 Twitter / X</a>
+      <a class="sbtn li" target="_blank" rel="noopener"
+         href="https://www.linkedin.com/sharing/share-offsite/?url=<?= rawurlencode($share_url) ?>"
+         data-share-via="linkedin">in LinkedIn</a>
+      <button type="button" class="sbtn copy" id="share-copy">📋 Copy link</button>
+    </div>
+
+    <details class="share-edit">
+      <summary>✏️ Edit message before sharing</summary>
+      <textarea id="share-msg"><?= e($share_message) ?></textarea>
+      <p class="muted" style="font-size:12px;margin-top:6px;">
+        Edits here update the WhatsApp / Telegram / Twitter share links live.
+      </p>
+    </details>
+  </div>
+</section>
+
+<style>
+.pkg-share { padding: clamp(28px, 4vw, 44px) 0; background:#fff7ed; border-top:1px solid #fed7aa; }
+.share-btns { display:flex; flex-wrap:wrap; gap:10px; }
+.sbtn {
+  display:inline-flex; align-items:center; gap:8px;
+  padding: 12px 18px; border-radius: 10px;
+  font-weight: 700; font-size: 14px;
+  text-decoration: none; color: #fff; border: 0; cursor: pointer;
+  font-family: inherit; min-height: 44px;
+  transition: transform .1s, filter .1s;
+}
+.sbtn:hover { transform: translateY(-1px); filter: brightness(1.08); }
+.sbtn:active { transform: translateY(0); }
+.sbtn.wa  { background: #25d366; }
+.sbtn.tg  { background: #229ed9; }
+.sbtn.fb  { background: #1877f2; }
+.sbtn.tw  { background: #000000; }
+.sbtn.li  { background: #0a66c2; }
+.sbtn.copy{ background: #374151; }
+.sbtn.copy.copied { background: #16a34a; }
+
+.share-edit { margin-top: 16px; }
+.share-edit summary { cursor: pointer; font-size: 14px; color: #b45309; font-weight: 600;
+  padding: 8px 0; user-select: none; }
+.share-edit textarea {
+  width: 100%; min-height: 200px; margin-top: 8px;
+  padding: 12px; border: 1px solid #fdba74; border-radius: 10px;
+  font: inherit; font-size: 14px; background: #fff;
+  resize: vertical; line-height: 1.55;
+}
+.share-edit textarea:focus { outline: 2px solid #f59e0b; outline-offset: 1px; border-color: #f59e0b; }
+</style>
+
+<script>
+(function () {
+  var msgEl = document.getElementById('share-msg');
+  var url   = <?= json_encode($share_url) ?>;
+  // Live-update share URLs when the user edits the message.
+  function rebuild () {
+    var text = (msgEl ? msgEl.value : <?= json_encode($share_message) ?>);
+    var enc  = encodeURIComponent(text);
+    var encU = encodeURIComponent(url);
+    var links = {
+      whatsapp: 'https://wa.me/?text=' + enc,
+      telegram: 'https://t.me/share/url?url=' + encU + '&text=' + enc,
+      facebook: 'https://www.facebook.com/sharer/sharer.php?u=' + encU,
+      twitter:  'https://twitter.com/intent/tweet?text=' + enc,
+      linkedin: 'https://www.linkedin.com/sharing/share-offsite/?url=' + encU,
+    };
+    document.querySelectorAll('a.sbtn[data-share-via]').forEach(function (a) {
+      var k = a.getAttribute('data-share-via');
+      if (links[k]) a.href = links[k];
+    });
+  }
+  if (msgEl) msgEl.addEventListener('input', rebuild);
+
+  // Copy link button
+  var copy = document.getElementById('share-copy');
+  if (copy) {
+    copy.addEventListener('click', function () {
+      navigator.clipboard.writeText(url).then(function () {
+        copy.textContent = '✅ Copied!';
+        copy.classList.add('copied');
+        setTimeout(function () {
+          copy.textContent = '📋 Copy link';
+          copy.classList.remove('copied');
+        }, 1800);
+      }).catch(function () {
+        alert('Could not copy automatically. URL:\n\n' + url);
+      });
+    });
+  }
+})();
+</script>
 
 <!-- STICKY BOTTOM CTA -->
 <div class="sticky-cta">
