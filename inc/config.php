@@ -24,7 +24,11 @@ define('DEFAULT_COUNTRY_LABEL', '+60');        // human label shown on phone inp
 // ---------- Storage ----------
 define('UPLOAD_DIR', __DIR__ . '/../uploads');
 define('UPLOAD_URL', '/uploads');
-define('UPLOAD_MAX_BYTES', 5 * 1024 * 1024);   // 5 MB
+define('UPLOAD_MAX_BYTES',       5 * 1024 * 1024);   // 5 MB per single file
+define('UPLOAD_MAX_TOTAL_BYTES', 8 * 1024 * 1024);   // 8 MB per form submit
+                                                     // (Hostinger nginx
+                                                     //  client_max_body_size
+                                                     //  is typically 8 MB)
 define('UPLOAD_ALLOWED_MIME', [
     'image/jpeg', 'image/png', 'image/webp', 'image/gif',
 ]);
