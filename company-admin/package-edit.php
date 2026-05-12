@@ -48,8 +48,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             [$url, $sid, $CID]);
                 }
             }
-            flash_set('success', 'Section added. Click Edit to add choices.');
-            redirect('/company-admin/package-edit.php?id=' . $id);
+            flash_set('success', 'Section created. Now tick the products from your catalog that belong in it.');
+            redirect('/company-admin/package-section-edit.php?id=' . $sid);
         }
 
         if ($action === 'delete_section') {
@@ -299,9 +299,12 @@ ca_open($package ? 'Edit Package' : 'New Package');
   <h3 style="margin:0 0 10px;">Sections (<?= count($sections) ?>)</h3>
   <p class="muted" style="margin:0 0 12px;">
     Each section is a part of the package — Master Room, Living Room (Sofa),
-    Dining, Hall TV Cabinet, etc. Inside a section you can add multiple
-    <strong>choices</strong> (e.g. 4 different sofa designs, 8 TV cabinet designs)
-    that the customer picks from.
+    Dining, Hall TV Cabinet, etc.
+  </p>
+  <p style="background:#ecfdf5;border-left:3px solid #10b981;padding:10px 14px;border-radius:6px;color:#065f46;margin:0 0 14px;font-size:14px;">
+    📌 <strong>Two-step flow:</strong> add a section here (just give it a title) →
+    you'll land on the section page where you tick the products from your catalog
+    that belong in it. The retail price is auto-computed from those products.
   </p>
 
   <table>
@@ -348,7 +351,10 @@ ca_open($package ? 'Edit Package' : 'New Package');
     <?php endforeach; ?>
   </table>
 
-  <h4 style="margin:18px 0 8px;">Add a section</h4>
+  <h4 style="margin:18px 0 8px;">Add a section <span class="muted" style="font-weight:400;font-size:13px;">— step 1 of 2</span></h4>
+  <p class="muted" style="margin:0 0 10px;font-size:13px;">
+    Just give it a title — we'll send you straight to the picker to choose products.
+  </p>
   <form method="post" enctype="multipart/form-data">
     <?= csrf_field() ?>
     <input type="hidden" name="action" value="add_section">
@@ -363,12 +369,14 @@ ca_open($package ? 'Edit Package' : 'New Package');
         <input class="input" name="section_sort_order" type="number" value="0">
       </div>
     </div>
-    <label>Description / item list</label>
+    <label>Description / item list <span class="muted">(optional — auto-filled from selected products)</span></label>
     <textarea class="input" name="section_description" rows="2"
-              placeholder="e.g. 1627 Queen Bedframe + Carter Queen Mattress"></textarea>
+              placeholder="Leave blank — we'll list the selected products automatically."></textarea>
     <label>Section image (optional — can also be added on the section edit page)</label>
     <input type="file" name="section_image" accept="image/*">
-    <p style="margin-top:14px;"><button class="btn primary" type="submit">Add Section</button></p>
+    <p style="margin-top:14px;">
+      <button class="btn primary" type="submit">Add Section &amp; pick products →</button>
+    </p>
   </form>
 </div>
 <?php endif; ?>
