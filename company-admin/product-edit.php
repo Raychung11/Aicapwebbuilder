@@ -27,10 +27,77 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirect('/company-admin/product-edit.php?id=' . $id);
     }
 
+    if ($action === 'update_variant') {
+        $vid = (int) input('variant_id', 0);
+        if ($vid && $id) {
+            db_exec(
+                'UPDATE product_variants
+                   SET variant_name = ?, color = ?, material = ?, size = ?, price = ?
+                 WHERE id = ? AND company_id = ? AND product_id = ?',
+                [
+                    trim((string) input('variant_name')),
+                    (string) input('color', ''),
+                    (string) input('material', ''),
+                    (string) input('size', ''),
+                    input('price') !== '' ? (float) input('price') : null,
+                    $vid, $CID, $id,
+                ]
+            );
+        }
+        redirect('/company-admin/product-edit.php?id=' . $id);
+    }
+
+    if (($action === 'move_variant_up' || $action === 'move_variant_down') && $id) {
+        $vid = (int) input('variant_id', 0);
+        $dir = $action === 'move_variant_up' ? 'up' : 'down';
+        if ($vid) {
+            // Renormalize sort_orders to 10, 20, 30 … so swaps are predictable
+            $sort = 10;
+            foreach (db_all(
+                'SELECT id FROM product_variants
+                  WHERE product_id = ? AND company_id = ?
+                  ORDER BY sort_order ASC, id ASC',
+                [$id, $CID]
+            ) as $r) {
+                db_exec('UPDATE product_variants SET sort_order = ? WHERE id = ?', [$sort, (int) $r['id']]);
+                $sort += 10;
+            }
+            $self = db_one(
+                'SELECT id, sort_order FROM product_variants
+                  WHERE id = ? AND company_id = ? AND product_id = ? LIMIT 1',
+                [$vid, $CID, $id]
+            );
+            if ($self) {
+                $op    = $dir === 'up' ? '<' : '>';
+                $order = $dir === 'up' ? 'DESC' : 'ASC';
+                $neighbor = db_one(
+                    "SELECT id, sort_order FROM product_variants
+                       WHERE company_id = ? AND product_id = ? AND sort_order {$op} ?
+                       ORDER BY sort_order {$order} LIMIT 1",
+                    [$CID, $id, (int) $self['sort_order']]
+                );
+                if ($neighbor) {
+                    db_exec('UPDATE product_variants SET sort_order = ? WHERE id = ? AND company_id = ?',
+                            [(int) $neighbor['sort_order'], $vid, $CID]);
+                    db_exec('UPDATE product_variants SET sort_order = ? WHERE id = ? AND company_id = ?',
+                            [(int) $self['sort_order'], (int) $neighbor['id'], $CID]);
+                }
+            }
+        }
+        redirect('/company-admin/product-edit.php?id=' . $id);
+    }
+
     if ($action === 'add_variant' && $id) {
+        // New variants go to the end
+        $maxRow = db_one(
+            'SELECT IFNULL(MAX(sort_order),0) AS m FROM product_variants
+              WHERE product_id = ? AND company_id = ?',
+            [$id, $CID]
+        );
+        $nextSort = (int) ($maxRow['m'] ?? 0) + 10;
         db_insert(
-            'INSERT INTO product_variants (company_id, product_id, variant_name, color, material, size, price)
-             VALUES (?, ?, ?, ?, ?, ?, ?)',
+            'INSERT INTO product_variants (company_id, product_id, variant_name, color, material, size, price, sort_order)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
             [
                 $CID, $id,
                 trim((string) input('variant_name')),
@@ -38,6 +105,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 (string) input('material', ''),
                 (string) input('size', ''),
                 input('price') !== '' ? (float) input('price') : null,
+                $nextSort,
             ]
         );
         redirect('/company-admin/product-edit.php?id=' . $id);
@@ -118,7 +186,7 @@ $images   = $id ? tenant_all(
     $CID, [$id]
 ) : [];
 $variants = $id ? tenant_all(
-    'SELECT * FROM product_variants WHERE company_id = ? AND product_id = ? ORDER BY id',
+    'SELECT * FROM product_variants WHERE company_id = ? AND product_id = ? ORDER BY sort_order ASC, id ASC',
     $CID, [$id]
 ) : [];
 
@@ -216,30 +284,56 @@ ca_open($product ? 'Edit Product' : 'Add Product');
 
 <?php if ($id): ?>
 <div class="card">
-  <h3 style="margin:0 0 10px">Variants</h3>
+  <h3 style="margin:0 0 4px">Variants</h3>
+  <p class="muted" style="margin:0 0 12px;font-size:13px;">
+    Edit any field inline then click <strong>Save</strong>. Use ↑ / ↓ to change the
+    display order on the public product page.
+  </p>
+
   <?php if ($variants): ?>
+    <!-- One standalone form per variant (rendered before the table so
+         every input/button can reference it via the HTML5 form= attribute). -->
+    <?php foreach ($variants as $v): ?>
+      <form id="vform-<?= (int) $v['id'] ?>" method="post" style="display:none;">
+        <?= csrf_field() ?>
+        <input type="hidden" name="variant_id" value="<?= (int) $v['id'] ?>">
+      </form>
+    <?php endforeach; ?>
+
+    <div style="overflow-x:auto;">
     <table>
-      <tr><th>Name</th><th>Color</th><th>Material</th><th>Size</th><th>Price</th><th></th></tr>
-      <?php foreach ($variants as $v): ?>
+      <tr>
+        <th>Name</th><th>Color</th><th>Material</th><th>Size</th><th>Price (RM)</th><th>Position</th><th></th>
+      </tr>
+      <?php foreach ($variants as $i => $v): $fid = 'vform-' . (int) $v['id']; ?>
         <tr>
-          <td><?= e($v['variant_name']) ?></td>
-          <td><?= e($v['color']) ?></td>
-          <td><?= e($v['material']) ?></td>
-          <td><?= e($v['size']) ?></td>
-          <td><?= $v['price'] !== null ? 'RM ' . number_format((float)$v['price'], 2) : '' ?></td>
-          <td>
-            <form method="post" onsubmit="return confirm('Delete variant?')">
-              <?= csrf_field() ?>
-              <input type="hidden" name="action" value="delete_variant">
-              <input type="hidden" name="variant_id" value="<?= (int)$v['id'] ?>">
-              <button class="btn danger">Delete</button>
-            </form>
+          <td><input class="input" form="<?= $fid ?>" name="variant_name" required value="<?= e($v['variant_name']) ?>"></td>
+          <td><input class="input" form="<?= $fid ?>" name="color"          value="<?= e($v['color']    ?? '') ?>"></td>
+          <td><input class="input" form="<?= $fid ?>" name="material"       value="<?= e($v['material'] ?? '') ?>"></td>
+          <td><input class="input" form="<?= $fid ?>" name="size"           value="<?= e($v['size']     ?? '') ?>"></td>
+          <td><input class="input" form="<?= $fid ?>" type="number" step="0.01" min="0" name="price" value="<?= $v['price'] !== null ? e($v['price']) : '' ?>"></td>
+          <td style="white-space:nowrap;text-align:center;">
+            <button form="<?= $fid ?>" name="action" value="move_variant_up" class="btn outline"
+                    title="Move up" <?= $i === 0 ? 'disabled' : '' ?>
+                    style="padding:6px 10px;font-size:14px;">↑</button>
+            <button form="<?= $fid ?>" name="action" value="move_variant_down" class="btn outline"
+                    title="Move down" <?= $i === count($variants) - 1 ? 'disabled' : '' ?>
+                    style="padding:6px 10px;font-size:14px;">↓</button>
+          </td>
+          <td class="actions" style="white-space:nowrap;">
+            <button form="<?= $fid ?>" name="action" value="update_variant" class="btn primary"
+                    style="padding:6px 12px;">Save</button>
+            <button form="<?= $fid ?>" name="action" value="delete_variant" class="btn danger"
+                    onclick="return confirm('Delete this variant?')"
+                    style="padding:6px 12px;">Delete</button>
           </td>
         </tr>
       <?php endforeach; ?>
     </table>
+    </div>
   <?php endif; ?>
-  <h4 style="margin:14px 0 6px">Add Variant</h4>
+
+  <h4 style="margin:18px 0 6px">Add Variant</h4>
   <form method="post">
     <?= csrf_field() ?>
     <input type="hidden" name="action" value="add_variant">
@@ -248,7 +342,7 @@ ca_open($product ? 'Edit Product' : 'Add Product');
       <div class="col"><label>Color</label><input class="input" name="color"></div>
       <div class="col"><label>Material</label><input class="input" name="material"></div>
       <div class="col"><label>Size</label><input class="input" name="size"></div>
-      <div class="col"><label>Price</label><input class="input" type="number" step="0.01" name="price"></div>
+      <div class="col"><label>Price (RM)</label><input class="input" type="number" step="0.01" min="0" name="price"></div>
     </div>
     <p><button class="btn primary">Add Variant</button></p>
   </form>

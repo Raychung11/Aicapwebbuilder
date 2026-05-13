@@ -42,7 +42,7 @@ $images = tenant_all(
     (int)$company['id'], [(int)$product['id']]
 );
 $variants = tenant_all(
-    'SELECT * FROM product_variants WHERE company_id = ? AND product_id = ? ORDER BY id',
+    'SELECT * FROM product_variants WHERE company_id = ? AND product_id = ? ORDER BY sort_order ASC, id ASC',
     (int)$company['id'], [(int)$product['id']]
 );
 

@@ -188,10 +188,12 @@ CREATE TABLE IF NOT EXISTS product_variants (
   size VARCHAR(80) DEFAULT NULL,
   price DECIMAL(12,2) DEFAULT NULL,
   image VARCHAR(255) DEFAULT NULL,
+  sort_order INT NOT NULL DEFAULT 0,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   KEY idx_pv_company (company_id),
-  KEY idx_pv_product (product_id)
+  KEY idx_pv_product (product_id),
+  KEY idx_pv_sort (product_id, sort_order)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ---------------------------------------------------------------------
