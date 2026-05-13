@@ -48,25 +48,25 @@
   var MB         = 1024 * 1024;
   var MAX_FILE   = 5 * MB;
   var MAX_TOTAL  = 8 * MB;
-  var SHRINK_AT  = 0.5 * MB;  // compress anything over 500 KB
-  var MAX_WIDTH  = 1280;      // longest edge after resize
-  var JPEG_Q     = 0.78;
+  var SHRINK_AT  = 0.25 * MB; // compress anything over 250 KB
+  var TARGET     = 250 * 1024; // try to land each image under 250 KB
 
-  function fmt(b) { return (b / MB).toFixed(2) + ' MB'; }
+  function fmt(b) {
+    if (b < 1024) return b + ' B';
+    if (b < MB)   return (b / 1024).toFixed(0) + ' KB';
+    return (b / MB).toFixed(2) + ' MB';
+  }
 
-  // ---------- Auto-compress image files in the browser ----------
-  function compressImage(file) {
+  // Compress once at the given maxDim + quality. Returns a Blob.
+  function encodeOnce(file, maxDim, quality) {
     return new Promise(function (resolve) {
-      if (!file || !file.type || file.type.indexOf('image/') !== 0) return resolve(file);
-      if (file.size < SHRINK_AT) return resolve(file);
-
       var img = new Image();
       var url = URL.createObjectURL(file);
       img.onload = function () {
         URL.revokeObjectURL(url);
         var w = img.naturalWidth || img.width;
         var h = img.naturalHeight || img.height;
-        var scale = Math.min(1, MAX_WIDTH / Math.max(w, h));
+        var scale = Math.min(1, maxDim / Math.max(w, h));
         w = Math.max(1, Math.round(w * scale));
         h = Math.max(1, Math.round(h * scale));
         var c = document.createElement('canvas');
@@ -75,25 +75,43 @@
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, w, h);
         ctx.drawImage(img, 0, 0, w, h);
-        c.toBlob(function (blob) {
-          if (!blob || blob.size >= file.size) {
-            console.log('[compress] skipped (no gain):', file.name, file.size);
-            return resolve(file);
-          }
-          console.log('[compress]', file.name,
-            (file.size / MB).toFixed(2), 'MB →',
-            (blob.size / MB).toFixed(2), 'MB');
-          var name = (file.name || 'image').replace(/\.[^.]+$/, '') + '.jpg';
-          resolve(new File([blob], name, { type: 'image/jpeg', lastModified: Date.now() }));
-        }, 'image/jpeg', JPEG_Q);
+        c.toBlob(function (blob) { resolve(blob); }, 'image/jpeg', quality);
       };
-      img.onerror = function () {
-        URL.revokeObjectURL(url);
-        console.warn('[compress] decode failed for', file.name);
-        resolve(file);
-      };
+      img.onerror = function () { URL.revokeObjectURL(url); resolve(null); };
       img.src = url;
     });
+  }
+
+  // ---------- Iteratively compress until under TARGET ----------
+  async function compressImage(file) {
+    if (!file || !file.type || file.type.indexOf('image/') !== 0) return file;
+    if (file.size < SHRINK_AT) return file;
+
+    var attempts = [
+      { dim: 1280, q: 0.82 },
+      { dim: 1280, q: 0.72 },
+      { dim: 1024, q: 0.70 },
+      { dim:  900, q: 0.65 },
+      { dim:  720, q: 0.60 },
+      { dim:  540, q: 0.55 },
+    ];
+
+    var best = null;
+    for (var i = 0; i < attempts.length; i++) {
+      var blob = await encodeOnce(file, attempts[i].dim, attempts[i].q);
+      if (!blob) continue;
+      if (!best || blob.size < best.size) best = blob;
+      console.log('[compress]', file.name, 'attempt', i + 1,
+        attempts[i].dim + 'px q=' + attempts[i].q, '→', fmt(blob.size));
+      if (blob.size <= TARGET) break;
+    }
+    if (!best || best.size >= file.size) {
+      console.log('[compress] keeping original (no gain):', file.name, fmt(file.size));
+      return file;
+    }
+    var name = (file.name || 'image').replace(/\.[^.]+$/, '') + '.jpg';
+    console.log('[compress] final', file.name, fmt(file.size), '→', fmt(best.size));
+    return new File([best], name, { type: 'image/jpeg', lastModified: Date.now() });
   }
 
   function replaceFiles(input, files) {
@@ -149,25 +167,28 @@
       if (!files.length) return;
       if (form) setBusy(form, +1);
       var originalTotal = files.reduce(function (s, f) { return s + f.size; }, 0);
-      setStatus(input, '⏳ Compressing image' + (files.length > 1 ? 's' : '') + '… please wait.');
+      setStatus(input, '⏳ Compressing ' + files.length + ' image' + (files.length > 1 ? 's' : '') + '… please wait.');
       var processed = [];
       for (var i = 0; i < files.length; i++) {
         try { processed.push(await compressImage(files[i])); }
         catch (e) { processed.push(files[i]); console.warn('[compress] error', e); }
       }
       var newTotal = processed.reduce(function (s, f) { return s + f.size; }, 0);
-      if (newTotal < originalTotal && replaceFiles(input, processed)) {
-        var savedMB = ((originalTotal - newTotal) / MB).toFixed(2);
+      var replaced = false;
+      if (newTotal < originalTotal) {
+        replaced = replaceFiles(input, processed);
+      }
+      if (replaced) {
         setStatus(input,
-          '<span class="ok">✅ Compressed — saved ' + savedMB + ' MB. ' +
-          'New total: ' + fmt(newTotal) + '. You can save now.</span>'
+          '<span class="ok">✅ Compressed: ' + fmt(originalTotal) + ' → ' + fmt(newTotal) +
+          '. Safe to save.</span>'
         );
       } else if (newTotal > MAX_TOTAL) {
         setStatus(input,
           '⚠️ Total still ' + fmt(newTotal) + ' — please pick smaller images.'
         );
       } else {
-        setStatus(input, '<span class="ok">✅ Ready (' + fmt(newTotal) + '). You can save now.</span>');
+        setStatus(input, '<span class="ok">✅ Ready (' + fmt(newTotal) + '). Safe to save.</span>');
       }
       if (form) setBusy(form, -1);
     });
@@ -182,9 +203,8 @@
         var hint = document.createElement('p');
         hint.className = 'upload-hint';
         hint.innerHTML =
-          '📷 <strong>Max 5 MB per file, 8 MB total per save.</strong> ' +
-          'Photos are <strong>auto-compressed in your browser</strong> ' +
-          '— wait for the green ✅ before clicking Save.';
+          '📷 <strong>Auto-compressed to ~250 KB</strong> in your browser. ' +
+          'Wait for the green ✅ before clicking Save.';
         inp.parentNode.insertBefore(hint, inp.nextSibling);
       }
     }
@@ -219,7 +239,7 @@
         alert(
           'These files are still larger than 5 MB after auto-compression:\n\n' +
           overs.join('\n') +
-          '\n\nThe images are unusually large. Pick a smaller resolution photo.'
+          '\n\nPick a smaller resolution photo.'
         );
         return;
       }
