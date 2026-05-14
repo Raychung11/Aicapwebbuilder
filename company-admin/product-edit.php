@@ -199,24 +199,141 @@ ca_open($product ? 'Edit Product' : 'Add Product');
       <div class="col"><label>Name</label><input class="input" name="name" required value="<?= e($product['name'] ?? '') ?>"></div>
       <div class="col"><label>Slug</label><input class="input" name="slug" value="<?= e($product['slug'] ?? '') ?>"></div>
     </div>
+    <?php
+      // Load (category → [subcategories]) map so the subcategory chips can
+      // be filtered to whatever matches the currently-typed category.
+      $cat_sub_rows = tenant_all(
+          'SELECT DISTINCT category, subcategory FROM products
+            WHERE company_id = ? AND category IS NOT NULL AND category != ""
+            ORDER BY category, subcategory',
+          $CID
+      );
+      $cats_by_name = [];
+      foreach ($cat_sub_rows as $r) {
+          $cat = trim((string) $r['category']);
+          $sub = trim((string) ($r['subcategory'] ?? ''));
+          if ($cat === '') continue;
+          if (!isset($cats_by_name[$cat])) $cats_by_name[$cat] = [];
+          if ($sub !== '' && !in_array($sub, $cats_by_name[$cat], true)) {
+              $cats_by_name[$cat][] = $sub;
+          }
+      }
+      $all_subcats = [];
+      foreach ($cats_by_name as $subs) {
+          foreach ($subs as $s) if (!in_array($s, $all_subcats, true)) $all_subcats[] = $s;
+      }
+      sort($all_subcats);
+    ?>
     <div class="row">
-      <div class="col"><label>Category <span class="muted">(top-level, e.g. Living Room)</span></label>
-        <input class="input" name="category" list="cat-options" value="<?= e($product['category'] ?? '') ?>">
+      <div class="col">
+        <label>Category <span class="muted">(top-level, e.g. Living Room)</span></label>
+        <input class="input" name="category" id="cat-input" list="cat-options"
+               autocomplete="off"
+               placeholder="Type or pick below…"
+               value="<?= e($product['category'] ?? '') ?>">
+        <?php if ($cats_by_name): ?>
+          <div class="cat-chips" style="margin-top:6px;">
+            <?php foreach (array_keys($cats_by_name) as $c): ?>
+              <button type="button" class="chip-btn" data-cat="<?= e($c) ?>">
+                <?= e($c) ?>
+              </button>
+            <?php endforeach; ?>
+          </div>
+        <?php endif; ?>
       </div>
-      <div class="col"><label>Subcategory <span class="muted">(e.g. Sofa, Coffee Table)</span></label>
-        <input class="input" name="subcategory" list="subcat-options" value="<?= e($product['subcategory'] ?? '') ?>">
+      <div class="col">
+        <label>Subcategory <span class="muted">(e.g. Sofa, Coffee Table)</span></label>
+        <input class="input" name="subcategory" id="sub-input" list="subcat-options"
+               autocomplete="off"
+               placeholder="Type or pick below…"
+               value="<?= e($product['subcategory'] ?? '') ?>">
+        <div class="sub-chips" id="sub-chips" style="margin-top:6px;"></div>
       </div>
     </div>
-    <?php
-      $cats    = tenant_all('SELECT DISTINCT category FROM products WHERE company_id = ? AND category IS NOT NULL AND category != "" ORDER BY category', $CID);
-      $subcats = tenant_all('SELECT DISTINCT subcategory FROM products WHERE company_id = ? AND subcategory IS NOT NULL AND subcategory != "" ORDER BY subcategory', $CID);
-    ?>
+
+    <!-- Native datalists (kept for typing autocomplete) -->
     <datalist id="cat-options">
-      <?php foreach ($cats as $c):    ?><option value="<?= e($c['category']) ?>"><?php endforeach; ?>
+      <?php foreach ($cats_by_name as $c => $_): ?><option value="<?= e($c) ?>"><?php endforeach; ?>
     </datalist>
     <datalist id="subcat-options">
-      <?php foreach ($subcats as $s): ?><option value="<?= e($s['subcategory']) ?>"><?php endforeach; ?>
+      <?php foreach ($all_subcats as $s): ?><option value="<?= e($s) ?>"><?php endforeach; ?>
     </datalist>
+
+    <style>
+      .chip-btn {
+        display: inline-block; margin: 0 4px 4px 0;
+        padding: 4px 10px; border-radius: 999px;
+        border: 1px solid #d1d5db; background: #f9fafb;
+        color: #374151; font-size: 12px; font-weight: 500;
+        cursor: pointer; font-family: inherit;
+        transition: background .12s, border-color .12s, color .12s;
+      }
+      .chip-btn:hover { background: #eef2ff; border-color: #6366f1; color: #4338ca; }
+      .chip-btn.active { background: #2563eb; border-color: #2563eb; color: #fff; }
+    </style>
+
+    <script>
+      (function () {
+        var catsMap = <?= json_encode($cats_by_name, JSON_UNESCAPED_UNICODE) ?>;
+        var allSubs = <?= json_encode($all_subcats, JSON_UNESCAPED_UNICODE) ?>;
+        var catInput = document.getElementById('cat-input');
+        var subInput = document.getElementById('sub-input');
+        var subChips = document.getElementById('sub-chips');
+        var subList  = document.getElementById('subcat-options');
+
+        function syncSubChips() {
+          var cat  = (catInput.value || '').trim();
+          var subs = (cat && catsMap[cat]) ? catsMap[cat] : allSubs;
+          subChips.innerHTML = '';
+          subs.forEach(function (s) {
+            var b = document.createElement('button');
+            b.type = 'button';
+            b.className = 'chip-btn';
+            b.textContent = s;
+            if ((subInput.value || '').trim() === s) b.classList.add('active');
+            b.addEventListener('click', function () {
+              subInput.value = s;
+              syncSubChips();
+            });
+            subChips.appendChild(b);
+          });
+          // Also refresh the native datalist with the filtered set
+          subList.innerHTML = '';
+          subs.forEach(function (s) {
+            var o = document.createElement('option');
+            o.value = s;
+            subList.appendChild(o);
+          });
+        }
+
+        function syncCatChips() {
+          var current = (catInput.value || '').trim();
+          document.querySelectorAll('.cat-chips .chip-btn').forEach(function (b) {
+            if (b.dataset.cat === current) b.classList.add('active');
+            else b.classList.remove('active');
+          });
+        }
+
+        document.querySelectorAll('.cat-chips .chip-btn').forEach(function (b) {
+          b.addEventListener('click', function () {
+            catInput.value = b.dataset.cat;
+            syncCatChips();
+            // Clear subcategory if it no longer fits the chosen category
+            var subs = catsMap[b.dataset.cat] || [];
+            if ((subInput.value || '').trim() !== '' && subs.indexOf(subInput.value.trim()) === -1) {
+              subInput.value = '';
+            }
+            syncSubChips();
+            catInput.focus();
+          });
+        });
+        catInput.addEventListener('input', function () { syncCatChips(); syncSubChips(); });
+        subInput.addEventListener('input', syncSubChips);
+
+        syncCatChips();
+        syncSubChips();
+      })();
+    </script>
     <div class="row">
       <div class="col"><label>Price Min</label><input class="input" name="price_min" type="number" step="0.01" value="<?= e($product['price_min'] ?? '') ?>"></div>
       <div class="col"><label>Price Max</label><input class="input" name="price_max" type="number" step="0.01" value="<?= e($product['price_max'] ?? '') ?>"></div>
