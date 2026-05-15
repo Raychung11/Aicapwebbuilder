@@ -20,6 +20,7 @@ $CA_MENU = [
     ['file' => 'salespersons.php', 'label' => 'Salespersons',    'icon' => '👥'],
     ['file' => 'referrals.php',    'label' => 'Referrals',       'icon' => '🔗'],
     ['file' => 'products.php',     'label' => 'Products',        'icon' => '🛋️'],
+    ['file' => 'categories.php',   'label' => 'Categories',      'icon' => '📂'],
     ['file' => 'featured.php',     'label' => 'Featured',        'icon' => '⭐'],
     ['file' => 'packages.php',     'label' => 'Packages',        'icon' => '📦'],
     ['file' => 'vouchers.php',     'label' => 'Vouchers',        'icon' => '🎁'],

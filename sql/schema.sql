@@ -160,6 +160,35 @@ CREATE TABLE IF NOT EXISTS products (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ---------------------------------------------------------------------
+-- Curated category + subcategory taxonomy per tenant.
+-- Products still store their category/subcategory as text for back-compat,
+-- but these tables drive the picker chips on the product-edit form.
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS categories (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  company_id INT UNSIGNED NOT NULL,
+  name VARCHAR(120) NOT NULL,
+  sort_order INT NOT NULL DEFAULT 0,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uniq_cat (company_id, name),
+  KEY idx_cat_sort (company_id, sort_order, id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS subcategories (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  company_id INT UNSIGNED NOT NULL,
+  category_id INT UNSIGNED NOT NULL,
+  name VARCHAR(120) NOT NULL,
+  sort_order INT NOT NULL DEFAULT 0,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uniq_sub (company_id, category_id, name),
+  KEY idx_sub_category (category_id, sort_order, id),
+  KEY idx_sub_company (company_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ---------------------------------------------------------------------
 -- product_images
 -- ---------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS product_images (

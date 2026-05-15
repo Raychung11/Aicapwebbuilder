@@ -200,16 +200,47 @@ ca_open($product ? 'Edit Product' : 'Add Product');
       <div class="col"><label>Slug</label><input class="input" name="slug" value="<?= e($product['slug'] ?? '') ?>"></div>
     </div>
     <?php
-      // Load (category → [subcategories]) map so the subcategory chips can
-      // be filtered to whatever matches the currently-typed category.
-      $cat_sub_rows = tenant_all(
+      // Build (category → [subcategories]) from the curated taxonomy tables
+      // when present, otherwise fall back to DISTINCT(product) values so the
+      // chips still show for tenants who haven't migrated yet.
+      if (!function_exists('db_table_exists')) {
+          function db_table_exists(string $name): bool {
+              try {
+                  $row = db_one(
+                      'SELECT 1 AS x FROM information_schema.TABLES
+                        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? LIMIT 1',
+                      [$name]
+                  );
+                  return (bool) $row;
+              } catch (Throwable $e) { return false; }
+          }
+      }
+      $cats_by_name = [];
+      if (db_table_exists('categories') && db_table_exists('subcategories')) {
+          $tax_cats = tenant_all(
+              'SELECT id, name FROM categories WHERE company_id = ? ORDER BY sort_order, id',
+              $CID
+          );
+          foreach ($tax_cats as $tc) {
+              $cats_by_name[$tc['name']] = [];
+              $subs = tenant_all(
+                  'SELECT name FROM subcategories
+                    WHERE company_id = ? AND category_id = ?
+                    ORDER BY sort_order, id',
+                  $CID, [(int) $tc['id']]
+              );
+              foreach ($subs as $sb) $cats_by_name[$tc['name']][] = $sb['name'];
+          }
+      }
+      // Always merge in any "live" values from products so legacy free-text
+      // categories still appear as chips.
+      $live_rows = tenant_all(
           'SELECT DISTINCT category, subcategory FROM products
             WHERE company_id = ? AND category IS NOT NULL AND category != ""
             ORDER BY category, subcategory',
           $CID
       );
-      $cats_by_name = [];
-      foreach ($cat_sub_rows as $r) {
+      foreach ($live_rows as $r) {
           $cat = trim((string) $r['category']);
           $sub = trim((string) ($r['subcategory'] ?? ''));
           if ($cat === '') continue;
@@ -226,7 +257,11 @@ ca_open($product ? 'Edit Product' : 'Add Product');
     ?>
     <div class="row">
       <div class="col">
-        <label>Category <span class="muted">(top-level, e.g. Living Room)</span></label>
+        <label>Category
+          <span class="muted">(top-level, e.g. Living Room) ·
+            <a href="/company-admin/categories.php" target="_blank" rel="noopener" style="color:#2563eb;">Manage list ↗</a>
+          </span>
+        </label>
         <input class="input" name="category" id="cat-input" list="cat-options"
                autocomplete="off"
                placeholder="Type or pick below…"
