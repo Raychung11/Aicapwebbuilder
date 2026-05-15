@@ -34,25 +34,73 @@ if ($q !== '')           { $sql .= ' AND p.name LIKE ?';     $params[] = '%' . $
 $sql   .= ' ORDER BY p.created_at DESC LIMIT 60';
 $products = db_all($sql, $params);
 
-$cats = tenant_all(
+// Categories: prefer the curated taxonomy table for ordering when present.
+// Always intersect with categories that actually have ≥1 active product so
+// empty categories don't appear on the public site.
+$prod_cats = [];
+foreach (tenant_all(
     'SELECT category, COUNT(*) AS n FROM products
       WHERE company_id = ? AND status = "active"
         AND category IS NOT NULL AND category != ""
-      GROUP BY category
-      ORDER BY category',
+      GROUP BY category',
     $cid
-);
+) as $r) {
+    $prod_cats[$r['category']] = (int) $r['n'];
+}
 
-$subcats = $category !== ''
-    ? tenant_all(
+$cats = [];
+$has_curated = function_exists('db_table_exists') && db_table_exists('categories');
+if ($has_curated) {
+    $curated = tenant_all(
+        'SELECT name FROM categories WHERE company_id = ? ORDER BY sort_order, id',
+        $cid
+    );
+    foreach ($curated as $c) {
+        if (isset($prod_cats[$c['name']])) {
+            $cats[] = ['category' => $c['name'], 'n' => $prod_cats[$c['name']]];
+            unset($prod_cats[$c['name']]);
+        }
+    }
+}
+// Append any remaining live-only categories alphabetically.
+ksort($prod_cats);
+foreach ($prod_cats as $name => $n) {
+    $cats[] = ['category' => $name, 'n' => $n];
+}
+
+// Subcategories under the selected category — same approach.
+$subcats = [];
+if ($category !== '') {
+    $prod_subs = [];
+    foreach (tenant_all(
         'SELECT subcategory, COUNT(*) AS n FROM products
           WHERE company_id = ? AND status = "active" AND category = ?
             AND subcategory IS NOT NULL AND subcategory != ""
-          GROUP BY subcategory
-          ORDER BY subcategory',
+          GROUP BY subcategory',
         $cid, [$category]
-      )
-    : [];
+    ) as $r) {
+        $prod_subs[$r['subcategory']] = (int) $r['n'];
+    }
+    if ($has_curated && db_table_exists('subcategories')) {
+        $curated_sub = db_all(
+            'SELECT s.name FROM subcategories s
+               JOIN categories c ON c.id = s.category_id
+              WHERE s.company_id = ? AND c.name = ?
+              ORDER BY s.sort_order, s.id',
+            [$cid, $category]
+        );
+        foreach ($curated_sub as $s) {
+            if (isset($prod_subs[$s['name']])) {
+                $subcats[] = ['subcategory' => $s['name'], 'n' => $prod_subs[$s['name']]];
+                unset($prod_subs[$s['name']]);
+            }
+        }
+    }
+    ksort($prod_subs);
+    foreach ($prod_subs as $name => $n) {
+        $subcats[] = ['subcategory' => $name, 'n' => $n];
+    }
+}
 
 // Helper to build catalog URLs while preserving search/category state.
 $build_url = function (array $overrides) use ($q, $category, $subcategory) {

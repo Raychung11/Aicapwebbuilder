@@ -183,6 +183,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $sid     = (int) input('id', 0);
         $newName = trim((string) input('name'));
         $cascade = !empty($_POST['cascade']);
+        $back    = 0;
         if ($sid && $newName !== '') {
             $row = db_one(
                 'SELECT s.*, c.name AS cat_name FROM subcategories s
@@ -191,6 +192,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 [$sid, $CID]
             );
             if ($row) {
+                $back = (int) $row['category_id'];
                 try {
                     db_exec('UPDATE subcategories SET name = ? WHERE id = ? AND company_id = ?',
                             [$newName, $sid, $CID]);
@@ -208,11 +210,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
         }
-        redirect('/company-admin/categories.php?cat=' . (int) $row['category_id']);
+        redirect('/company-admin/categories.php' . ($back ? '?cat=' . $back : ''));
     }
 
     if ($action === 'delete_subcategory') {
         $sid = (int) input('id', 0);
+        $back = 0;
         if ($sid) {
             $row = db_one(
                 'SELECT s.*, c.name AS cat_name FROM subcategories s
@@ -221,6 +224,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 [$sid, $CID]
             );
             if ($row) {
+                $back  = (int) $row['category_id'];
                 $clear = !empty($_POST['clear_products']);
                 db_exec('DELETE FROM subcategories WHERE id = ? AND company_id = ?', [$sid, $CID]);
                 if ($clear) {
@@ -233,7 +237,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 flash_set('success', 'Subcategory deleted: ' . $row['name']);
             }
         }
-        redirect('/company-admin/categories.php?cat=' . (int) ($row['category_id'] ?? 0));
+        redirect('/company-admin/categories.php' . ($back ? '?cat=' . $back : ''));
     }
 
     if (($action === 'move_subcategory_up' || $action === 'move_subcategory_down')) {
@@ -332,16 +336,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // ---------- Read ----------
-$categories = tenant_all(
+$categories = db_all(
     'SELECT c.*,
             (SELECT COUNT(*) FROM products
-              WHERE company_id = c.company_id AND category = c.name) AS prod_count,
+              WHERE company_id = ? AND category = c.name) AS prod_count,
             (SELECT COUNT(*) FROM subcategories
-              WHERE category_id = c.id) AS sub_count
+              WHERE category_id = c.id AND company_id = ?) AS sub_count
        FROM categories c
       WHERE c.company_id = ?
       ORDER BY c.sort_order, c.id',
-    $CID
+    [$CID, $CID, $CID]
 );
 
 $selected_cat_id = (int) input('cat', 0);
@@ -351,14 +355,17 @@ if ($selected_cat_id) {
     $selected_cat = db_one('SELECT * FROM categories WHERE id = ? AND company_id = ?',
                            [$selected_cat_id, $CID]);
     if ($selected_cat) {
-        $subs = tenant_all(
+        // Use db_all directly so the placeholder order matches the params.
+        // (tenant_all prepends $CID which would shift everything by one and
+        // bind $CID to the wrong column.)
+        $subs = db_all(
             'SELECT s.*,
                     (SELECT COUNT(*) FROM products
-                      WHERE company_id = s.company_id AND category = ? AND subcategory = s.name) AS prod_count
+                      WHERE company_id = ? AND category = ? AND subcategory = s.name) AS prod_count
                FROM subcategories s
               WHERE s.company_id = ? AND s.category_id = ?
               ORDER BY s.sort_order, s.id',
-            $CID, [$selected_cat['name'], $selected_cat_id]
+            [$CID, $selected_cat['name'], $CID, $selected_cat_id]
         );
     } else {
         $selected_cat_id = 0;
