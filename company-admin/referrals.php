@@ -8,7 +8,7 @@ $to   = (string) input('to',   date('Y-m-d'));         // default: today
 if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $from)) $from = date('Y-m-01');
 if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $to))   $to   = date('Y-m-d');
 
-$rows = tenant_all(
+$rows = db_all(
     'SELECT s.id, s.name, s.referral_code, s.commission_rate, s.status,
             (SELECT COUNT(*) FROM leads
               WHERE company_id = s.company_id AND salesperson_id = s.id
@@ -23,8 +23,7 @@ $rows = tenant_all(
        FROM salespersons s
       WHERE s.company_id = ?
       ORDER BY claims DESC, leads DESC, s.name',
-    $CID,
-    [$from, $to, $from, $to, $from, $to]
+    [$from, $to, $from, $to, $from, $to, $CID]
 );
 
 // Recent attributed leads list (most recent 50)
