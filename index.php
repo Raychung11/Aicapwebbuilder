@@ -141,7 +141,36 @@ require __DIR__ . '/inc/header.php';
 <section id="visit" style="background:#fff">
   <div class="container">
     <h2>Visit Our Showroom <a href="/visit.php" style="font-size:14px;font-weight:500;margin-left:8px;">See all →</a></h2>
-    <div class="grid" style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr))">
+
+    <style>
+      .home-branches { display:grid; gap:10px; grid-template-columns: repeat(2, 1fr); }
+      @media (min-width: 600px) { .home-branches { grid-template-columns: repeat(3, 1fr); } }
+      @media (min-width: 980px) { .home-branches { grid-template-columns: repeat(4, 1fr); gap:14px; } }
+      .home-branches .branch { font-size: 12px; border-radius: 10px; }
+      .home-branches .branch .map { aspect-ratio: 16/10; }
+      .home-branches .branch .meta { padding: 10px 12px; gap: 4px; }
+      .home-branches .branch .meta h3 { margin:0 0 2px; font-size: 14px; line-height:1.2; }
+      .home-branches .branch .meta .muted, .home-branches .branch .meta div { font-size: 11.5px; word-break: break-word; }
+      .home-branches .branch .actions {
+        display:grid; grid-template-columns: repeat(2, 1fr); gap: 4px;
+        padding: 4px 12px 12px; margin-top: auto;
+      }
+      .home-branches .branch .actions .btn {
+        padding: 6px 4px; font-size: 11px; min-height: 0; border-radius: 6px;
+        font-weight: 600; line-height: 1.1; white-space: nowrap;
+        overflow: hidden; text-overflow: ellipsis;
+      }
+      @media (min-width: 980px) {
+        .home-branches .branch { font-size: 13px; border-radius: 12px; }
+        .home-branches .branch .meta { padding: 12px 14px; gap: 5px; }
+        .home-branches .branch .meta h3 { font-size: 15px; }
+        .home-branches .branch .meta .muted, .home-branches .branch .meta div { font-size: 12px; }
+        .home-branches .branch .actions { padding: 4px 14px 14px; gap: 6px; }
+        .home-branches .branch .actions .btn { padding: 7px 6px; font-size: 12px; }
+      }
+    </style>
+
+    <div class="home-branches">
       <?php foreach ($branches as $b):
         $maps_url = $b['google_map_link'] ?: ($b['address']
           ? 'https://www.google.com/maps/search/?api=1&query=' . rawurlencode($b['address'])
@@ -168,7 +197,7 @@ require __DIR__ . '/inc/header.php';
           </div>
           <div class="actions">
             <?php if ($maps_url): ?>
-              <a class="btn outline" target="_blank" rel="noopener" href="<?= e($maps_url) ?>">📍 Google Maps</a>
+              <a class="btn outline" target="_blank" rel="noopener" href="<?= e($maps_url) ?>">📍 Maps</a>
             <?php endif; ?>
             <?php if ($waze_url): ?>
               <a class="btn outline" target="_blank" rel="noopener" href="<?= e($waze_url) ?>"
@@ -181,6 +210,9 @@ require __DIR__ . '/inc/header.php';
               <a class="btn primary" target="_blank" rel="noopener"
                  href="<?= e(whatsapp_link($branch_wa, 'Hi, I\'m interested in visiting your showroom.')) ?>"
                  style="background:#25d366;color:#fff">💬 WhatsApp</a>
+            <?php endif; ?>
+            <?php if (!empty($b['phone'])): ?>
+              <a class="btn dark" href="tel:<?= e(preg_replace('/[^\d+]/', '', $b['phone'])) ?>">📞 Call</a>
             <?php endif; ?>
           </div>
         </div>
