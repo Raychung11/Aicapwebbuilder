@@ -45,22 +45,40 @@ layout_head($company, 'Visit Us', 'visit', $page_meta);
 .visit-hero h1 { font-size: clamp(26px,5vw,40px); margin: 0 0 8px; }
 .visit-hero p  { margin: 0; opacity:.9; max-width: 640px; font-size: clamp(15px,2vw,17px); }
 
+.visit-branches {
+  display: grid; gap: 16px; grid-template-columns: 1fr;
+}
+@media (min-width: 720px) {
+  .visit-branches { grid-template-columns: repeat(auto-fill, minmax(440px, 1fr)); }
+}
+
 .visit-branch {
   background:#fff; border-radius: 12px; overflow:hidden;
-  box-shadow: 0 1px 4px rgba(0,0,0,.08); margin-bottom: 22px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.06);
   display: grid; grid-template-columns: 1fr; gap: 0;
+  font-size: 14px;
 }
-@media (min-width: 800px) { .visit-branch { grid-template-columns: 1.1fr 1fr; } }
-.visit-branch .map-wrap { aspect-ratio: 16/10; background:#eee; }
+.visit-branch .map-wrap { aspect-ratio: 16/9; background:#eee; }
 .visit-branch .map-wrap iframe { width:100%; height:100%; border:0; display:block; }
-.visit-branch .meta-wrap { padding: 22px; display:flex; flex-direction:column; gap: 10px; }
-.visit-branch h2 { margin:0 0 4px; font-size: clamp(20px,3vw,24px); }
-.visit-branch .row-info { display:flex; gap:10px; align-items:flex-start; font-size: 15px; }
-.visit-branch .row-info .icon { font-size:18px; line-height:1; flex-shrink:0; width:24px; text-align:center; }
-.visit-branch .actions { display:flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.visit-branch .meta-wrap { padding: 14px 16px; display:flex; flex-direction:column; gap: 6px; }
+.visit-branch h2 { margin:0 0 4px; font-size: 17px; line-height:1.2; }
+.visit-branch .row-info { display:flex; gap:8px; align-items:flex-start; font-size: 13px; color:#374151; }
+.visit-branch .row-info .icon { font-size:14px; line-height:1.4; flex-shrink:0; width:18px; text-align:center; }
+.visit-branch .row-info a { color: var(--c-primary); text-decoration:none; }
+.visit-branch .row-info a:hover { text-decoration: underline; }
+.visit-branch .actions {
+  display:flex; flex-wrap: wrap; gap: 6px; padding: 0 16px 14px;
+}
+.visit-branch .actions .btn {
+  padding: 7px 12px; font-size: 12.5px; min-height: 0; border-radius: 7px;
+  font-weight: 600;
+}
 
-.gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; padding: 0 22px 22px; }
-.gallery a { display:block; aspect-ratio: 1/1; overflow:hidden; border-radius: 8px; background:#eee; }
+.gallery {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 6px;
+  padding: 0 16px 14px;
+}
+.gallery a { display:block; aspect-ratio: 1/1; overflow:hidden; border-radius: 6px; background:#eee; }
 .gallery img { width:100%; height:100%; object-fit:cover; display:block; transition: transform .3s; }
 .gallery a:hover img { transform: scale(1.05); }
 </style>
@@ -158,6 +176,7 @@ layout_head($company, 'Visit Us', 'visit', $page_meta);
               </span>
             </h3>
           <?php endif; ?>
+          <div class="visit-branches">
 
       <?php foreach ($list as $b):
         $maps_url = $b['google_map_link'] ?: ($b['address']
@@ -253,6 +272,7 @@ layout_head($company, 'Visit Us', 'visit', $page_meta);
           <?php endif; ?>
         </article>
       <?php endforeach; ?>
+          </div><!-- /.visit-branches -->
         </div><!-- /.region-section -->
       <?php endforeach; ?>
 
