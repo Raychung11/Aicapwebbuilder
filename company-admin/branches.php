@@ -121,16 +121,27 @@ ca_open('Branches');
     <label>Address</label><input class="input" name="address" value="<?= e($editing['address'] ?? '') ?>">
     <div class="row">
       <div class="col">
-        <label>Region <span class="muted">(used to group showrooms on the Visit Us page)</span></label>
+        <label>State <span class="muted">(used to group showrooms on the Visit Us page)</span></label>
         <input class="input" name="region" list="region-options"
-               placeholder="e.g. Central / North / South / East Coast"
+               placeholder="e.g. Selangor / Johor / Penang"
                value="<?= e($editing['region'] ?? '') ?>">
         <datalist id="region-options">
-          <option value="Central">
-          <option value="North">
-          <option value="South">
-          <option value="East Coast">
-          <option value="East Malaysia">
+          <option value="Selangor">
+          <option value="Kuala Lumpur">
+          <option value="Putrajaya">
+          <option value="Johor">
+          <option value="Penang">
+          <option value="Perak">
+          <option value="Kedah">
+          <option value="Perlis">
+          <option value="Negeri Sembilan">
+          <option value="Melaka">
+          <option value="Pahang">
+          <option value="Terengganu">
+          <option value="Kelantan">
+          <option value="Sabah">
+          <option value="Sarawak">
+          <option value="Labuan">
         </datalist>
         <p class="muted" style="font-size:12px;margin-top:4px;">
           Type or pick — leave blank to group under "Other".
@@ -203,7 +214,7 @@ ca_open('Branches');
 
 <div class="card">
   <table>
-    <tr><th>Name</th><th>Region</th><th>Photos</th><th>Phone</th><th>Address</th><th>Status</th><th></th></tr>
+    <tr><th>Name</th><th>State</th><th>Photos</th><th>Phone</th><th>Address</th><th>Status</th><th></th></tr>
     <?php foreach ($branches as $b):
       $img_count = (int) db_one(
           'SELECT COUNT(*) c FROM branch_images WHERE company_id = ? AND branch_id = ?',

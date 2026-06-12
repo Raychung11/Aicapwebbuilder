@@ -121,15 +121,20 @@ layout_head($company, 'Visit Us', 'visit', $page_meta);
       <p class="muted" style="margin: 0 0 16px;"><?= count($branches) ?> location<?= count($branches) === 1 ? '' : 's' ?></p>
 
       <?php
-        // Group branches by region. Anything without a region goes into "Other".
-        // Preferred display order for common Malaysian regions:
-        $region_order = ['Central', 'North', 'South', 'East Coast', 'East Malaysia'];
+        // Group branches by state. Anything without a state goes into "Other".
+        // Preferred display order for Malaysian states:
+        $region_order = [
+            'Selangor', 'Kuala Lumpur', 'Putrajaya', 'Johor', 'Penang', 'Perak',
+            'Kedah', 'Perlis', 'Negeri Sembilan', 'Melaka',
+            'Pahang', 'Terengganu', 'Kelantan',
+            'Sabah', 'Sarawak', 'Labuan',
+        ];
         $by_region = [];
         foreach ($branches as $b) {
             $r = trim((string) ($b['region'] ?? '')) ?: 'Other';
             $by_region[$r][] = $b;
         }
-        // Sort: known regions in preferred order, then alphabetical for the rest,
+        // Sort: known states in preferred order, then alphabetical for the rest,
         // and Other last.
         uksort($by_region, function ($a, $b) use ($region_order) {
             $ai = array_search($a, $region_order, true);
@@ -146,7 +151,7 @@ layout_head($company, 'Visit Us', 'visit', $page_meta);
         }
       ?>
 
-      <!-- Region filter chips (the "by region" zone) -->
+      <!-- State filter chips (the "by state" zone) -->
       <?php if (count($by_region) > 1): ?>
         <div class="region-chips" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:22px;">
           <button type="button" class="rgn-chip active" data-region="all">
