@@ -81,6 +81,7 @@ CREATE TABLE IF NOT EXISTS branches (
   company_id INT UNSIGNED NOT NULL,
   name VARCHAR(150) NOT NULL,
   address VARCHAR(255) DEFAULT NULL,
+  region VARCHAR(60) DEFAULT NULL,
   phone VARCHAR(40) DEFAULT NULL,
   whatsapp_number VARCHAR(40) DEFAULT NULL,
   email VARCHAR(150) DEFAULT NULL,
@@ -91,7 +92,8 @@ CREATE TABLE IF NOT EXISTS branches (
   status ENUM('active','disabled') NOT NULL DEFAULT 'active',
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
-  KEY idx_branch_company (company_id)
+  KEY idx_branch_company (company_id),
+  KEY idx_branch_region (company_id, region)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ---------------------------------------------------------------------

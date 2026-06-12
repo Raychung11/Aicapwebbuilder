@@ -65,6 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $f = [
         'name'             => trim((string) input('name')),
         'address'          => (string) input('address', ''),
+        'region'           => trim((string) input('region', '')) ?: null,
         'phone'            => (string) input('phone', ''),
         'whatsapp_number'  => (string) input('whatsapp_number', ''),
         'email'            => (string) input('email', ''),
@@ -77,7 +78,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($id) {
         tenant_row_or_404('branches', $id);
         db_exec(
-            'UPDATE branches SET name=?, address=?, phone=?, whatsapp_number=?, email=?,
+            'UPDATE branches SET name=?, address=?, region=?, phone=?, whatsapp_number=?, email=?,
                                  google_map_embed=?, google_map_link=?, waze_link=?,
                                  operating_hours=?, status=?
               WHERE company_id=? AND id=?',
@@ -85,10 +86,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         );
     } else {
         db_insert(
-            'INSERT INTO branches (company_id, name, address, phone, whatsapp_number, email,
+            'INSERT INTO branches (company_id, name, address, region, phone, whatsapp_number, email,
                                    google_map_embed, google_map_link, waze_link,
                                    operating_hours, status)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
             [$CID, ...array_values($f)]
         );
     }
@@ -118,6 +119,24 @@ ca_open('Branches');
       </div>
     </div>
     <label>Address</label><input class="input" name="address" value="<?= e($editing['address'] ?? '') ?>">
+    <div class="row">
+      <div class="col">
+        <label>Region <span class="muted">(used to group showrooms on the Visit Us page)</span></label>
+        <input class="input" name="region" list="region-options"
+               placeholder="e.g. Central / North / South / East Coast"
+               value="<?= e($editing['region'] ?? '') ?>">
+        <datalist id="region-options">
+          <option value="Central">
+          <option value="North">
+          <option value="South">
+          <option value="East Coast">
+          <option value="East Malaysia">
+        </datalist>
+        <p class="muted" style="font-size:12px;margin-top:4px;">
+          Type or pick — leave blank to group under "Other".
+        </p>
+      </div>
+    </div>
     <div class="row">
       <div class="col"><label>Email</label><input class="input" name="email" value="<?= e($editing['email'] ?? '') ?>"></div>
       <div class="col"><label>Operating Hours</label><input class="input" name="operating_hours" value="<?= e($editing['operating_hours'] ?? '') ?>"></div>
@@ -184,7 +203,7 @@ ca_open('Branches');
 
 <div class="card">
   <table>
-    <tr><th>Name</th><th>Photos</th><th>Phone</th><th>Address</th><th>Status</th><th></th></tr>
+    <tr><th>Name</th><th>Region</th><th>Photos</th><th>Phone</th><th>Address</th><th>Status</th><th></th></tr>
     <?php foreach ($branches as $b):
       $img_count = (int) db_one(
           'SELECT COUNT(*) c FROM branch_images WHERE company_id = ? AND branch_id = ?',
@@ -193,6 +212,10 @@ ca_open('Branches');
     ?>
       <tr>
         <td><?= e($b['name']) ?></td>
+        <td><?php if (!empty($b['region'])): ?>
+              <span class="badge"><?= e($b['region']) ?></span>
+            <?php else: ?><span class="muted">—</span><?php endif; ?>
+        </td>
         <td><?= $img_count > 0 ? '🖼️ ' . $img_count : '<span class="muted">—</span>' ?></td>
         <td><?= e($b['phone']) ?></td>
         <td><?= e($b['address']) ?></td>

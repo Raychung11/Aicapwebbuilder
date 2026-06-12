@@ -88,7 +88,78 @@ layout_head($company, 'Visit Us', 'visit', $page_meta);
     <?php else: ?>
       <p class="muted" style="margin: 0 0 16px;"><?= count($branches) ?> location<?= count($branches) === 1 ? '' : 's' ?></p>
 
-      <?php foreach ($branches as $b):
+      <?php
+        // Group branches by region. Anything without a region goes into "Other".
+        // Preferred display order for common Malaysian regions:
+        $region_order = ['Central', 'North', 'South', 'East Coast', 'East Malaysia'];
+        $by_region = [];
+        foreach ($branches as $b) {
+            $r = trim((string) ($b['region'] ?? '')) ?: 'Other';
+            $by_region[$r][] = $b;
+        }
+        // Sort: known regions in preferred order, then alphabetical for the rest,
+        // and Other last.
+        uksort($by_region, function ($a, $b) use ($region_order) {
+            $ai = array_search($a, $region_order, true);
+            $bi = array_search($b, $region_order, true);
+            if ($a === 'Other') return 1;
+            if ($b === 'Other') return -1;
+            if ($ai !== false && $bi !== false) return $ai <=> $bi;
+            if ($ai !== false) return -1;
+            if ($bi !== false) return 1;
+            return strcmp($a, $b);
+        });
+        function region_slug(string $r): string {
+            return 'region-' . preg_replace('/[^a-z0-9]+/', '-', strtolower($r));
+        }
+      ?>
+
+      <!-- Region filter chips (the "by region" zone) -->
+      <?php if (count($by_region) > 1): ?>
+        <div class="region-chips" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:22px;">
+          <button type="button" class="rgn-chip active" data-region="all">
+            All <span class="cnt"><?= count($branches) ?></span>
+          </button>
+          <?php foreach ($by_region as $r => $list): ?>
+            <button type="button" class="rgn-chip" data-region="<?= e(region_slug($r)) ?>">
+              <?= e($r) ?> <span class="cnt"><?= count($list) ?></span>
+            </button>
+          <?php endforeach; ?>
+        </div>
+        <style>
+          .rgn-chip {
+            display:inline-flex; align-items:center; gap:6px;
+            padding: 8px 14px; border-radius: 999px;
+            border: 1px solid #e5e7eb; background:#fff; color:#374151;
+            font-weight: 600; font-size: 14px; cursor: pointer;
+            font-family: inherit; transition: background .15s, border-color .15s, color .15s;
+          }
+          .rgn-chip:hover { border-color: var(--c-primary); color: var(--c-primary); }
+          .rgn-chip.active { background: var(--c-primary); color:#fff; border-color: var(--c-primary); }
+          .rgn-chip .cnt {
+            display:inline-block; background: rgba(0,0,0,.1); color: inherit;
+            padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 700;
+          }
+          .rgn-chip.active .cnt { background: rgba(255,255,255,.25); }
+          .region-section h3 {
+            margin: 18px 0 12px; padding-bottom: 6px;
+            font-size: 18px; color: var(--c-primary);
+            border-bottom: 2px solid #e5e7eb;
+          }
+        </style>
+      <?php endif; ?>
+
+      <?php foreach ($by_region as $region => $list): ?>
+        <div class="region-section" data-region="<?= e(region_slug($region)) ?>">
+          <?php if (count($by_region) > 1): ?>
+            <h3 id="<?= e(region_slug($region)) ?>">📍 <?= e($region) ?>
+              <span class="muted" style="font-weight:400;font-size:14px;">
+                · <?= count($list) ?> location<?= count($list) === 1 ? '' : 's' ?>
+              </span>
+            </h3>
+          <?php endif; ?>
+
+      <?php foreach ($list as $b):
         $maps_url = $b['google_map_link'] ?: ($b['address']
           ? 'https://www.google.com/maps/search/?api=1&query=' . rawurlencode($b['address'])
           : null);
@@ -182,6 +253,24 @@ layout_head($company, 'Visit Us', 'visit', $page_meta);
           <?php endif; ?>
         </article>
       <?php endforeach; ?>
+        </div><!-- /.region-section -->
+      <?php endforeach; ?>
+
+      <script>
+        (function () {
+          var chips = document.querySelectorAll('.rgn-chip');
+          var sections = document.querySelectorAll('.region-section');
+          chips.forEach(function (chip) {
+            chip.addEventListener('click', function () {
+              var r = chip.dataset.region;
+              chips.forEach(function (c) { c.classList.toggle('active', c === chip); });
+              sections.forEach(function (s) {
+                s.style.display = (r === 'all' || s.dataset.region === r) ? '' : 'none';
+              });
+            });
+          });
+        })();
+      </script>
     <?php endif; ?>
 
     <?php if (!empty($company['whatsapp_number'])): ?>

@@ -52,6 +52,7 @@ try {
         ['packages',       'meta_title',       "VARCHAR(255) DEFAULT NULL AFTER cta_url"],
         ['packages',       'meta_description', "TEXT AFTER meta_title"],
         ['product_variants','sort_order',      "INT NOT NULL DEFAULT 0 AFTER image"],
+        ['branches',       'region',            "VARCHAR(60) DEFAULT NULL AFTER address"],
     ];
     foreach ($columns_to_add as [$tbl, $col, $type]) {
         $exists = db_one(
