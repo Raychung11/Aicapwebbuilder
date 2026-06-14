@@ -63,7 +63,7 @@ $_secondary = e($company['theme_secondary_color'] ?: '#f59e0b');
 <style>
 :root { --c-primary: <?= $_primary ?>; --c-secondary: <?= $_secondary ?>; }
 * { box-sizing: border-box; }
-html, body { margin:0; padding:0; }
+html, body { margin:0; padding:0; overflow-x: hidden; }
 html { scroll-behavior: smooth; scroll-padding-top: 120px; }
 body {
   font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
