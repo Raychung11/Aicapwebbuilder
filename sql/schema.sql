@@ -113,6 +113,24 @@ CREATE TABLE IF NOT EXISTS branch_images (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ---------------------------------------------------------------------
+-- company_banners (rotating hero slides on the tenant homepage)
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS company_banners (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  company_id INT UNSIGNED NOT NULL,
+  image VARCHAR(500) DEFAULT NULL,
+  title VARCHAR(255) DEFAULT NULL,
+  subtitle TEXT,
+  cta_text VARCHAR(120) DEFAULT NULL,
+  cta_url VARCHAR(500) DEFAULT NULL,
+  sort_order INT NOT NULL DEFAULT 0,
+  status ENUM('active','disabled') NOT NULL DEFAULT 'active',
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_company_banner_company (company_id, status, sort_order)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ---------------------------------------------------------------------
 -- salespersons
 -- ---------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS salespersons (

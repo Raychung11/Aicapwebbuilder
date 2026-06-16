@@ -30,6 +30,15 @@ $branches = tenant_all(
     'SELECT * FROM branches WHERE company_id = ? AND status = "active" ORDER BY id',
     $cid
 );
+$banner_slides = [];
+if (db_table_exists('company_banners')) {
+    $banner_slides = tenant_all(
+        'SELECT * FROM company_banners
+          WHERE company_id = ? AND status = "active"
+          ORDER BY sort_order ASC, id ASC',
+        $cid
+    );
+}
 $vouchers = tenant_all(
     'SELECT * FROM vouchers
       WHERE company_id = ? AND status = "active"
@@ -60,33 +69,130 @@ require __DIR__ . '/inc/header.php';
 </nav>
 
 <?php
-  // Marketing banner with sensible fallbacks
-  $banner_title    = !empty($company['banner_title'])    ? $company['banner_title']    : $company['name'];
-  $banner_subtitle = !empty($company['banner_subtitle']) ? $company['banner_subtitle'] : ($company['description'] ?? '');
-  $banner_cta_text = !empty($company['banner_cta_text']) ? $company['banner_cta_text'] : 'Browse Catalog';
-  $banner_cta_url  = !empty($company['banner_cta_url'])  ? $company['banner_cta_url']  : '/catalog.php';
-  $banner_image    = $company['banner_image'] ?? '';
-  $hero_class      = 'hero' . ($banner_image ? ' has-bg' : '');
-  $hero_style      = $banner_image ? 'background-image:url(\'' . e($banner_image) . '\');' : '';
+  // Build the list of hero slides. If no per-slide rows exist, fall back to
+  // the single banner stored on the companies row.
+  if (!$banner_slides) {
+      $banner_slides = [[
+          'image'    => $company['banner_image']    ?? null,
+          'title'    => $company['banner_title']    ?? null,
+          'subtitle' => $company['banner_subtitle'] ?? null,
+          'cta_text' => $company['banner_cta_text'] ?? null,
+          'cta_url'  => $company['banner_cta_url']  ?? null,
+      ]];
+  }
+  $is_carousel = count($banner_slides) > 1;
 ?>
-<section id="home" class="<?= $hero_class ?>" style="<?= $hero_style ?>">
-  <div class="container">
-    <h1><?= e($banner_title) ?></h1>
-    <p><?= e($banner_subtitle) ?></p>
-    <div class="btn-row" style="margin-top:18px">
-      <a class="btn primary" href="<?= e($banner_cta_url) ?>"><?= e($banner_cta_text) ?></a>
-      <?php if ($vouchers): ?>
-        <a class="btn outline-light" href="#vouchers">Get Vouchers</a>
-      <?php endif; ?>
-      <?php if (!empty($company['whatsapp_number'])): ?>
-        <a class="btn outline-light" target="_blank" rel="noopener"
-           href="<?= e(whatsapp_link($company['whatsapp_number'], 'Hi, I\'d like to know more.')) ?>">
-          Chat on WhatsApp
-        </a>
-      <?php endif; ?>
+<section id="home" class="<?= $is_carousel ? 'hero-carousel' : '' ?>">
+  <?php foreach ($banner_slides as $i => $b):
+    $b_title    = !empty($b['title'])    ? $b['title']    : $company['name'];
+    $b_subtitle = !empty($b['subtitle']) ? $b['subtitle'] : ($company['description'] ?? '');
+    $b_cta_text = !empty($b['cta_text']) ? $b['cta_text'] : 'Browse Catalog';
+    $b_cta_url  = !empty($b['cta_url'])  ? $b['cta_url']  : '/catalog.php';
+    $b_image    = $b['image'] ?? '';
+    $slide_cls  = 'hero' . ($b_image ? ' has-bg' : '') . ($is_carousel ? ' hero-slide' : '') . ($is_carousel && $i === 0 ? ' active' : '');
+    $slide_sty  = $b_image ? 'background-image:url(\'' . e($b_image) . '\');' : '';
+  ?>
+  <div class="<?= $slide_cls ?>" style="<?= $slide_sty ?>">
+    <div class="container">
+      <h1><?= e($b_title) ?></h1>
+      <p><?= e($b_subtitle) ?></p>
+      <div class="btn-row" style="margin-top:18px">
+        <a class="btn primary" href="<?= e($b_cta_url) ?>"><?= e($b_cta_text) ?></a>
+        <?php if ($vouchers): ?>
+          <a class="btn outline-light" href="#vouchers">Get Vouchers</a>
+        <?php endif; ?>
+        <?php if (!empty($company['whatsapp_number'])): ?>
+          <a class="btn outline-light" target="_blank" rel="noopener"
+             href="<?= e(whatsapp_link($company['whatsapp_number'], 'Hi, I\'d like to know more.')) ?>">
+            Chat on WhatsApp
+          </a>
+        <?php endif; ?>
+      </div>
     </div>
   </div>
+  <?php endforeach; ?>
+
+  <?php if ($is_carousel): ?>
+    <button class="hero-nav prev" type="button" aria-label="Previous slide">‹</button>
+    <button class="hero-nav next" type="button" aria-label="Next slide">›</button>
+    <div class="hero-dots">
+      <?php foreach ($banner_slides as $i => $_b): ?>
+        <button type="button" data-i="<?= $i ?>" class="<?= $i === 0 ? 'active' : '' ?>" aria-label="Go to slide <?= $i + 1 ?>"></button>
+      <?php endforeach; ?>
+    </div>
+  <?php endif; ?>
 </section>
+
+<?php if ($is_carousel): ?>
+<style>
+  .hero-carousel { position: relative; overflow: hidden; }
+  .hero-carousel .hero-slide {
+    position: absolute; inset: 0; opacity: 0;
+    transition: opacity .8s ease;
+    pointer-events: none;
+  }
+  .hero-carousel .hero-slide:first-of-type { position: relative; }
+  .hero-carousel .hero-slide.active { opacity: 1; pointer-events: auto; }
+  .hero-carousel .hero-nav {
+    position: absolute; top: 50%; transform: translateY(-50%); z-index: 3;
+    background: rgba(0,0,0,.35); color: #fff; border: 0; cursor: pointer;
+    width: 40px; height: 40px; border-radius: 999px; font-size: 26px; line-height: 1;
+    display: flex; align-items: center; justify-content: center;
+    transition: background .15s;
+  }
+  .hero-carousel .hero-nav.prev { left: 14px; }
+  .hero-carousel .hero-nav.next { right: 14px; }
+  .hero-carousel .hero-nav:hover { background: rgba(0,0,0,.6); }
+  .hero-carousel .hero-dots {
+    position: absolute; bottom: 16px; left: 0; right: 0; z-index: 3;
+    display: flex; justify-content: center; gap: 8px;
+  }
+  .hero-carousel .hero-dots button {
+    width: 10px; height: 10px; padding: 0; border: 0; cursor: pointer;
+    background: rgba(255,255,255,.55); border-radius: 999px;
+    transition: background .2s, width .2s;
+  }
+  .hero-carousel .hero-dots button.active { background: #fff; width: 28px; }
+  @media (max-width: 600px) {
+    .hero-carousel .hero-nav { width: 32px; height: 32px; font-size: 22px; }
+    .hero-carousel .hero-nav.prev { left: 8px; }
+    .hero-carousel .hero-nav.next { right: 8px; }
+  }
+</style>
+<script>
+(function () {
+  var car = document.querySelector('.hero-carousel');
+  if (!car) return;
+  var slides = car.querySelectorAll('.hero-slide');
+  var dots   = car.querySelectorAll('.hero-dots button');
+  if (slides.length < 2) return;
+  var cur = 0, timer = null, INTERVAL = 5500;
+
+  function show(i) {
+    cur = (i + slides.length) % slides.length;
+    slides.forEach(function (s, k) { s.classList.toggle('active', k === cur); });
+    dots.forEach(function (d, k) { d.classList.toggle('active', k === cur); });
+  }
+  function next() { show(cur + 1); }
+  function prev() { show(cur - 1); }
+  function start() { stop(); timer = setInterval(next, INTERVAL); }
+  function stop()  { if (timer) { clearInterval(timer); timer = null; } }
+
+  car.querySelector('.hero-nav.next').addEventListener('click', function () { next(); start(); });
+  car.querySelector('.hero-nav.prev').addEventListener('click', function () { prev(); start(); });
+  dots.forEach(function (d, k) {
+    d.addEventListener('click', function () { show(k); start(); });
+  });
+  car.addEventListener('mouseenter', stop);
+  car.addEventListener('mouseleave', start);
+  document.addEventListener('visibilitychange', function () {
+    document.hidden ? stop() : start();
+  });
+
+  start();
+})();
+</script>
+<?php endif; ?>
 
 <?php if ($vouchers): ?>
 <section id="vouchers" style="background: linear-gradient(180deg, #fff7ed, #fff);">

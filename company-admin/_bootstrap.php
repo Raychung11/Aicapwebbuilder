@@ -16,6 +16,7 @@ $CID = (int) $company['id'];
 $CA_MENU = [
     ['file' => 'index.php',        'label' => 'Dashboard',       'icon' => '🏠'],
     ['file' => 'settings.php',     'label' => 'Branding & SEO',  'icon' => '🎨'],
+    ['file' => 'banners.php',      'label' => 'Banners',         'icon' => '🖼️'],
     ['file' => 'branches.php',     'label' => 'Branches',        'icon' => '📍'],
     ['file' => 'salespersons.php', 'label' => 'Salespersons',    'icon' => '👥'],
     ['file' => 'referrals.php',    'label' => 'Referrals',       'icon' => '🔗'],
