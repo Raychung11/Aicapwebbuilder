@@ -167,6 +167,10 @@ CREATE TABLE IF NOT EXISTS products (
   price_max DECIMAL(12,2) DEFAULT NULL,
   stock_status ENUM('in_stock','out_of_stock','preorder') NOT NULL DEFAULT 'in_stock',
   is_featured TINYINT(1) NOT NULL DEFAULT 0,
+  is_promo TINYINT(1) NOT NULL DEFAULT 0,
+  promo_price DECIMAL(12,2) DEFAULT NULL,
+  promo_starts_at DATETIME DEFAULT NULL,
+  promo_ends_at DATETIME DEFAULT NULL,
   meta_title VARCHAR(255) DEFAULT NULL,
   meta_description TEXT,
   status ENUM('active','draft','archived') NOT NULL DEFAULT 'active',
@@ -176,7 +180,8 @@ CREATE TABLE IF NOT EXISTS products (
   KEY idx_prod_company (company_id),
   KEY idx_prod_category (company_id, category),
   KEY idx_prod_subcategory (company_id, category, subcategory),
-  KEY idx_prod_featured (company_id, is_featured)
+  KEY idx_prod_featured (company_id, is_featured),
+  KEY idx_prod_promo (company_id, is_promo)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ---------------------------------------------------------------------

@@ -124,6 +124,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'price_max'        => input('price_max') !== '' ? (float) input('price_max') : null,
         'stock_status'     => in_array(input('stock_status'), ['in_stock','out_of_stock','preorder'], true) ? input('stock_status') : 'in_stock',
         'is_featured'      => !empty($_POST['is_featured']) ? 1 : 0,
+        'is_promo'         => !empty($_POST['is_promo']) ? 1 : 0,
+        'promo_price'      => input('promo_price') !== '' ? (float) input('promo_price') : null,
+        'promo_starts_at'  => trim((string) input('promo_starts_at', '')) ?: null,
+        'promo_ends_at'    => trim((string) input('promo_ends_at', '')) ?: null,
         'meta_title'       => trim((string) input('meta_title', '')) ?: null,
         'meta_description' => trim((string) input('meta_description', '')) ?: null,
         'status'           => in_array(input('status'), ['active','draft','archived'], true) ? input('status') : 'active',
@@ -133,6 +137,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         db_exec(
             'UPDATE products SET name=?, slug=?, category=?, subcategory=?, description=?,
                                  price_min=?, price_max=?, stock_status=?, is_featured=?,
+                                 is_promo=?, promo_price=?, promo_starts_at=?, promo_ends_at=?,
                                  meta_title=?, meta_description=?, status=?
               WHERE company_id=? AND id=?',
             [...array_values($f), $CID, $id]
@@ -147,8 +152,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $id = db_insert(
             'INSERT INTO products (company_id, name, slug, category, subcategory, description,
                                    price_min, price_max, stock_status, is_featured,
+                                   is_promo, promo_price, promo_starts_at, promo_ends_at,
                                    meta_title, meta_description, status)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
             [$CID, ...array_values($f)]
         );
     }
@@ -393,6 +399,33 @@ ca_open($product ? 'Edit Product' : 'Add Product');
         </label>
       </div>
     </div>
+
+    <fieldset style="border:1px solid #e5e7eb;border-radius:8px;padding:12px 14px;margin-top:8px;">
+      <legend style="padding:0 6px;font-weight:600;font-size:13px;color:#444;">🏷️ Promo / Sale</legend>
+      <label style="display:flex;align-items:center;gap:8px;font-weight:500;margin:0;">
+        <input type="checkbox" name="is_promo" value="1" <?= !empty($product['is_promo']) ? 'checked' : '' ?>>
+        On promo — list this item on the <code>/promo.php</code> sale page
+      </label>
+      <div class="row" style="margin-top:8px">
+        <div class="col">
+          <label>Promo price (RM) <span class="muted">(shown alongside the original price)</span></label>
+          <input class="input" name="promo_price" type="number" step="0.01" min="0"
+                 value="<?= e($product['promo_price'] ?? '') ?>"
+                 placeholder="e.g. 899.00">
+        </div>
+        <div class="col">
+          <label>Starts <span class="muted">(optional)</span></label>
+          <input class="input" name="promo_starts_at" type="datetime-local"
+                 value="<?= e(!empty($product['promo_starts_at']) ? date('Y-m-d\TH:i', strtotime($product['promo_starts_at'])) : '') ?>">
+        </div>
+        <div class="col">
+          <label>Ends <span class="muted">(optional — drives countdown)</span></label>
+          <input class="input" name="promo_ends_at" type="datetime-local"
+                 value="<?= e(!empty($product['promo_ends_at']) ? date('Y-m-d\TH:i', strtotime($product['promo_ends_at'])) : '') ?>">
+        </div>
+      </div>
+    </fieldset>
+
     <label>Description</label>
     <textarea class="input" name="description" rows="4"><?= e($product['description'] ?? '') ?></textarea>
     <label>Add images (multiple)</label>

@@ -279,6 +279,7 @@ footer.site .copy { margin-top:24px; padding-top:14px; opacity:.6; font-size:12p
       <a href="/catalog.php" <?= $page_id === 'catalog' ? 'class="active"' : '' ?>>Catalog</a>
       <a href="/packages.php" <?= $page_id === 'packages' ? 'class="active"' : '' ?>>Packages</a>
       <a href="/voucher.php" <?= $page_id === 'voucher' ? 'class="active"' : '' ?>>Vouchers</a>
+      <a href="/promo.php" <?= $page_id === 'promo' ? 'class="active"' : '' ?>>Promo</a>
       <a href="/visit.php" <?= $page_id === 'visit' ? 'class="active"' : '' ?>>Visit Us</a>
       <?php if (current_member()): ?>
         <a href="/member-dashboard.php">My Account</a>
