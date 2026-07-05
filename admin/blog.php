@@ -146,11 +146,20 @@ admin_layout_open('Blog');
           </td>
           <td><?= e($p['category_name'] ?: '—') ?></td>
           <td><span class="badge"><?= e(strtoupper($p['language'])) ?></span></td>
-          <td><?= blog_status_badge($p['status']) ?></td>
+          <td>
+            <?= blog_status_badge($p['status']) ?>
+            <?php
+              if ($p['status'] === 'published'
+                  && !empty($p['published_at'])
+                  && strtotime($p['published_at']) > time() + 60) {
+                  echo ' <span class="badge yellow" title="Scheduled — will appear once the publish time is reached">⏳ scheduled</span>';
+              }
+            ?>
+          </td>
           <td><?= e($p['author_name'] ?: '—') ?></td>
           <td>
             <?php if ($p['published_at']): ?>
-              <?= e(date('j M Y', strtotime($p['published_at']))) ?>
+              <?= e(date('j M Y H:i', strtotime($p['published_at']))) ?>
             <?php else: ?>
               <span class="muted">—</span>
             <?php endif; ?>

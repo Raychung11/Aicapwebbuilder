@@ -42,7 +42,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($pub_at) {
         $pub_at = date('Y-m-d H:i:s', strtotime(str_replace('T', ' ', $pub_at)));
     } elseif ($status === 'published') {
-        $pub_at = date('Y-m-d H:i:s');
+        // Use MySQL's clock, not PHP's — on shared hosting the two often
+        // sit in different timezones, and a PHP-computed value would
+        // land in the future relative to MySQL's NOW(), which would hide
+        // the post from the public /blog listing.
+        $row    = db_one('SELECT NOW() AS n');
+        $pub_at = $row['n'] ?? date('Y-m-d H:i:s');
     }
 
     $data = [
