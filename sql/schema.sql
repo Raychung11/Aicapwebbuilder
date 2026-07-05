@@ -578,6 +578,87 @@ CREATE TABLE IF NOT EXISTS package_choices (
   KEY idx_pkgch_company (company_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- ---------------------------------------------------------------------
+-- Blog module (AiCap corporate blog — not tenant-scoped)
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS blog_categories (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  name VARCHAR(150) NOT NULL,
+  slug VARCHAR(190) NOT NULL,
+  description TEXT,
+  status ENUM('active','disabled') NOT NULL DEFAULT 'active',
+  sort_order INT NOT NULL DEFAULT 0,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uniq_blog_cat_slug (slug)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS blog_tags (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  name VARCHAR(80) NOT NULL,
+  slug VARCHAR(100) NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uniq_blog_tag_slug (slug)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS blog_posts (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  title VARCHAR(255) NOT NULL,
+  slug VARCHAR(220) NOT NULL,
+  seo_title VARCHAR(255) DEFAULT NULL,
+  meta_description TEXT,
+  excerpt TEXT,
+  content MEDIUMTEXT,
+  featured_image VARCHAR(500) DEFAULT NULL,
+  image_prompt TEXT,
+  facebook_caption TEXT,
+  linkedin_caption TEXT,
+  whatsapp_text TEXT,
+  source_url VARCHAR(1000) DEFAULT NULL,
+  source_summary TEXT,
+  ai_prompt_used MEDIUMTEXT,
+  language ENUM('en','zh','ms') NOT NULL DEFAULT 'en',
+  category_id INT UNSIGNED DEFAULT NULL,
+  author_id INT UNSIGNED DEFAULT NULL,
+  status ENUM('draft','pending_review','published','archived') NOT NULL DEFAULT 'draft',
+  view_count INT UNSIGNED NOT NULL DEFAULT 0,
+  published_at DATETIME DEFAULT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uniq_blog_slug (slug),
+  KEY idx_blog_status (status, published_at),
+  KEY idx_blog_category (category_id),
+  KEY idx_blog_lang (language)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS blog_post_tags (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  blog_post_id INT UNSIGNED NOT NULL,
+  tag_id       INT UNSIGNED NOT NULL,
+  PRIMARY KEY (id),
+  UNIQUE KEY uniq_post_tag (blog_post_id, tag_id),
+  KEY idx_blog_post_tag_tag (tag_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS ai_generation_logs (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  user_id INT UNSIGNED DEFAULT NULL,
+  blog_post_id INT UNSIGNED DEFAULT NULL,
+  input_type ENUM('news_url','topic','raw_notes','rewrite','caption','image_prompt') NOT NULL,
+  input_text MEDIUMTEXT,
+  ai_output  MEDIUMTEXT,
+  token_usage INT UNSIGNED DEFAULT NULL,
+  status ENUM('success','error') NOT NULL DEFAULT 'success',
+  error_message TEXT,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_ai_log_post (blog_post_id),
+  KEY idx_ai_log_created (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- Run install.php once after importing this schema to seed the

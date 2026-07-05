@@ -32,6 +32,7 @@
         <h4>Company</h4>
         <div class="links">
           <a href="/about.php">About</a>
+          <a href="/blog.php">Blog</a>
           <a href="/contact.php">Contact</a>
           <a href="/contact.php?type=partner">Partner</a>
           <a href="/contact.php?type=licensing">Become a licensee</a>

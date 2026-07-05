@@ -12,6 +12,7 @@ $ADMIN_MENU = [
     ['file' => 'templates.php',   'label' => 'Page Templates', 'icon' => '📐'],
     ['file' => 'analytics.php',   'label' => 'Analytics',      'icon' => '📊'],
     ['file' => 'ai-settings.php', 'label' => 'AI Settings',    'icon' => '🤖'],
+    ['file' => 'blog.php',        'label' => 'Blog',           'icon' => '📝'],
 ];
 
 function admin_layout_open(string $title): void {

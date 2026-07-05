@@ -19,6 +19,10 @@ RewriteRule ^products/([a-z0-9_-]+)/?$ /product.php?slug=$1 [L,QSA]
 # Tenant package friendly URL: /packages/{slug} -> /package.php?slug=...
 # (single package, slug-based)
 RewriteRule ^packages/([a-z0-9_-]+)/?$ /package.php?slug=$1 [L,QSA]
+
+# Corporate blog friendly URL: /blog/{slug} -> /blog-post.php?slug=...
+# (/blog and /blog.php still resolve to the listing directly.)
+RewriteRule ^blog/([a-z0-9_-]+)/?$ /blog-post.php?slug=$1 [L,QSA]
 </IfModule>
 
 # Disable directory listing

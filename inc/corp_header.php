@@ -195,6 +195,7 @@ section.corp.dark .lead { color: var(--soft); }
       <a href="/how-it-works.php" <?= $page_id === 'how'      ? 'class="active"' : '' ?>>How it works</a>
       <a href="/pricing.php"    <?= $page_id === 'pricing'   ? 'class="active"' : '' ?>>Pricing</a>
       <a href="/licensing.php"  <?= $page_id === 'licensing' ? 'class="active"' : '' ?>>Licensing</a>
+      <a href="/blog.php"       <?= $page_id === 'blog'      ? 'class="active"' : '' ?>>Blog</a>
       <a href="/about.php"      <?= $page_id === 'about'     ? 'class="active"' : '' ?>>About</a>
       <a href="/contact.php" class="cta <?= $page_id === 'contact' ? 'active' : '' ?>">Contact</a>
     </nav>
