@@ -14,11 +14,81 @@ $companies = db_all(
 $on_platform = (($_SERVER['HTTP_HOST'] ?? '') === APP_BASE_DOMAIN
               || ($_SERVER['HTTP_HOST'] ?? '') === 'www.' . APP_BASE_DOMAIN);
 
-$page_title = 'AICAP Furniture BOS — Multi-tenant SaaS for Furniture Brands';
-$page_desc  = 'Give every furniture brand its own branded website, e-catalog, '
-            . 'voucher system, lead capture and analytics — all on one platform. '
-            . 'Subscribe or join our licensing program today.';
-$page_id    = 'home';
+$page_title    = 'AICAP Furniture BOS — SaaS + Consulting for Malaysia\'s Furniture Industry';
+$page_desc     = 'Multi-tenant SaaS and professional consulting for Malaysia\'s furniture industry. '
+               . 'Every brand gets a branded site, e-catalog, vouchers, leads and analytics, '
+               . 'backed by advisory services for business systems, process optimisation, '
+               . 'and digital transformation.';
+$page_id       = 'home';
+$page_keywords = 'AICAP, AICAP Furniture BOS, furniture SaaS Malaysia, furniture consulting Malaysia, digital transformation furniture, multi-tenant furniture platform, furniture ERP CRM WMS, Malaysia furniture industry, furniture business operating system';
+
+$_origin = (($_SERVER['HTTPS'] ?? 'off') !== 'off' ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'aicap.my');
+
+$page_faq = [
+    [
+        'What is AICAP Furniture BOS?',
+        'AICAP Furniture BOS is a multi-tenant Business Operating System for Malaysia\'s furniture industry. Each licensed furniture brand gets its own branded subdomain running a full e-catalog, voucher system, lead capture, agent referral, package builder, blog and analytics — all managed from one platform.',
+    ],
+    [
+        'Does AICAP Solution provide software only, or also consulting?',
+        'Both. AICAP Solution runs the AICAP Furniture BOS SaaS platform and separately offers a Professional Consulting Package covering business requirements, system architecture, integration strategy, and an implementation roadmap. The two can be engaged together or independently.',
+    ],
+    [
+        'Who is AICAP Furniture BOS built for?',
+        'Furniture manufacturers, retailers, wholesalers, exporters, SME operators and multi-brand groups — especially companies moving from Excel and WhatsApp to structured digital operations.',
+    ],
+    [
+        'Can I run multiple furniture brands on one account?',
+        'Yes. The licensing program is designed for multi-brand operators — one licensee runs several tenant subdomains, each with its own branding, catalog, vouchers and analytics.',
+    ],
+    [
+        'Does each brand need a technical team to run the platform?',
+        'No. The tenant admin console handles catalog uploads, voucher setup, banners, showroom info and lead management without code. AICAP handles hosting, updates, backups and security.',
+    ],
+];
+
+$page_jsonld = [
+    // Product / SoftwareApplication schema for the SaaS
+    [
+        '@context'       => 'https://schema.org',
+        '@type'          => 'SoftwareApplication',
+        '@id'            => $_origin . '/#saas',
+        'name'           => 'AICAP Furniture BOS',
+        'description'    => 'Multi-tenant Business Operating System for furniture brands — branded tenant sites, e-catalog, vouchers, leads, analytics, agent referrals and AI chatbot.',
+        'applicationCategory' => 'BusinessApplication',
+        'applicationSubCategory' => 'ERP / CMS / CRM',
+        'operatingSystem'=> 'Web',
+        'provider'       => ['@id' => $_origin . '/#organization'],
+        'audience'       => [
+            '@type' => 'BusinessAudience',
+            'audienceType' => 'Furniture manufacturers, retailers, wholesalers, exporters, SMEs',
+        ],
+        'featureList'    => [
+            'Multi-tenant branded subdomains',
+            'E-catalog with categories, subcategories and variants',
+            'Voucher and loyalty system',
+            'Agent referral tracking',
+            'Package builder with retail-price calculation',
+            'Showroom map with regional grouping',
+            'Analytics dashboard',
+            'AI product recommendation chatbot',
+            'Blog module with AI drafting',
+        ],
+    ],
+    // Service schema for consulting (mirrored so both are indexable from the landing page)
+    [
+        '@context'    => 'https://schema.org',
+        '@type'       => 'Service',
+        '@id'         => $_origin . '/#consulting',
+        'serviceType' => 'Business system and digital transformation consulting',
+        'name'        => 'Professional Consulting Package',
+        'provider'    => ['@id' => $_origin . '/#organization'],
+        'areaServed'  => ['@type' => 'Country', 'name' => 'Malaysia'],
+        'description' => 'Advisory and implementation guidance covering business process assessment, requirements analysis, system architecture, integration strategy and roadmap delivery.',
+        'url'         => $_origin . '/consulting.php',
+    ],
+];
+
 require __DIR__ . '/corp_header.php';
 ?>
 
@@ -193,6 +263,37 @@ require __DIR__ . '/corp_header.php';
   </div>
 </section>
 <?php endif; ?>
+
+<!-- FAQ (visible + FAQPage JSON-LD auto-emitted by corp_header) -->
+<section class="corp" id="faq" itemscope itemtype="https://schema.org/FAQPage">
+  <div class="container">
+    <h2>Frequently asked questions</h2>
+    <p class="lead">Short, direct answers so buyers (and AI answer engines) can quote them cleanly.</p>
+
+    <div style="max-width:820px;margin-top:24px;">
+      <?php foreach ($page_faq as $i => [$q, $a]):
+        $open = $i < 2 ? ' open' : '';
+      ?>
+        <details<?= $open ?>
+                 style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:16px 20px;margin-bottom:10px;"
+                 itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+          <summary style="font-weight:700;font-size:16px;cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;color:var(--bg);">
+            <span itemprop="name"><?= e($q) ?></span>
+            <span style="color:var(--accent);font-size:20px;line-height:1;">＋</span>
+          </summary>
+          <div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"
+               style="margin-top:10px;color:#374151;font-size:15px;line-height:1.6;">
+            <div itemprop="text"><?= e($a) ?></div>
+          </div>
+        </details>
+      <?php endforeach; ?>
+    </div>
+    <style>
+      details[open] > summary > span:last-child { transform: rotate(45deg); display:inline-block; }
+      summary::-webkit-details-marker { display: none; }
+    </style>
+  </div>
+</section>
 
 <!-- DARK CTA -->
 <section class="corp dark-cta">

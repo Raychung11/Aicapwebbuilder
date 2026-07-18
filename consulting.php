@@ -5,11 +5,134 @@ require_once __DIR__ . '/inc/helpers.php';
 
 if (current_company()) { redirect('/'); }
 
-$page_title = 'Professional Consulting Services | AICAP Solution';
-$page_desc  = 'AICAP Solution provides professional consulting, advisory, planning and '
-            . 'implementation support for business system development, process optimisation, '
-            . 'digital transformation initiatives and operational improvement projects.';
-$page_id    = 'consulting';
+$page_title    = 'Professional Consulting Services | AICAP Solution';
+$page_desc     = 'AICAP Solution provides professional consulting, advisory, planning and '
+               . 'implementation support for business system development, process optimisation, '
+               . 'digital transformation and operational improvement. 12-month advisory '
+               . 'engagement, milestone-based monthly billing from RM 10k to RM 40k.';
+$page_id       = 'consulting';
+$page_keywords = 'furniture consulting Malaysia, digital transformation consulting, business process consulting, ERP advisory, CRM implementation, WMS consulting, BI dashboard advisory, AICAP Solution, system architecture, requirements analysis, Malaysia SME transformation';
+
+$_origin = (($_SERVER['HTTPS'] ?? 'off') !== 'off' ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'aicap.my');
+
+// ---- FAQ (both visible and auto-emitted as FAQPage JSON-LD) ----
+$page_faq = [
+    [
+        'What is included in the AICAP Solution Professional Consulting Package?',
+        'The package covers nine advisory workstreams: business process assessment, functional and technical requirements analysis, workflow optimisation, system architecture advisory, user experience review, data structure planning, integration framework consultation, project planning and implementation guidance, and fortnightly project review sessions.',
+    ],
+    [
+        'What deliverables will I receive from the consulting engagement?',
+        'Five artefacts are delivered across the engagement: a Business Requirements Document (BRD), Process Flow Documentation, System Architecture Recommendations, an Integration Strategy Report, and an Implementation Roadmap.',
+    ],
+    [
+        'How long is a consulting engagement?',
+        'The standard engagement runs for 12 months from the Effective Date and is renewable by mutual written agreement. Reviews with your team happen on a fortnightly cadence.',
+    ],
+    [
+        'How is the consulting service billed?',
+        'AICAP Solution invoices monthly, based on the professional services performed, project milestones achieved, and deliverables completed for that billing period. Monthly fees typically range from RM 10,000 to RM 40,000, and the total 12-month contract value does not exceed RM 300,000 unless expanded by written agreement.',
+    ],
+    [
+        'Who is this consulting service for?',
+        'Furniture manufacturers, retailers, wholesalers, exporters, SME operators and multi-brand group holdings in Malaysia — typically companies moving beyond ad-hoc Excel and WhatsApp workflows into structured business systems (ERP, CRM, WMS, BI dashboard, dealer or supplier portals).',
+    ],
+    [
+        'Do I have to use the AICAP Furniture BOS platform to hire AICAP Solution for consulting?',
+        'No. The Professional Consulting Package is offered independently. AICAP Solution advises on your existing systems, guides new-system selection, and can plan an implementation whether or not you adopt the AICAP Furniture BOS SaaS platform.',
+    ],
+    [
+        'What kind of business problems does AICAP Solution typically help with?',
+        'Common engagements address slow stock movement, dead stock, manual order tracking, lost export inquiries, weak dealer follow-up, fragmented data across Excel and WhatsApp, and the absence of a unified business dashboard. Consulting produces the architecture and roadmap to consolidate these into a single digital operating system.',
+    ],
+    [
+        'Where is AICAP Solution based?',
+        'AICAP Solution Sdn. Bhd. (Reg. No. 202401048231) is based at Zenith Corporate Park 1, Block B-19-02, Jalan SS7/26 Kelana Jaya, Petaling Jaya, Selangor, Malaysia.',
+    ],
+];
+
+// ---- Structured data: Service + HowTo + BreadcrumbList ----
+$scope_items = [
+    'Business process assessment',
+    'Functional & technical requirements analysis',
+    'Workflow optimisation consultation',
+    'System architecture advisory',
+    'User experience review',
+    'Data structure planning',
+    'Integration framework consultation',
+    'Project planning & implementation guidance',
+    'Fortnightly project review sessions',
+];
+
+$service_schema = [
+    '@context'       => 'https://schema.org',
+    '@type'          => 'Service',
+    '@id'            => $_origin . '/consulting.php#service',
+    'serviceType'    => 'Business system and digital transformation consulting',
+    'name'           => 'Professional Consulting Package',
+    'category'       => 'Business Consulting',
+    'description'    => 'Professional consulting, advisory, planning and implementation support for business system development, process optimisation, digital transformation and operational improvement.',
+    'provider'       => ['@id' => $_origin . '/#organization'],
+    'areaServed'     => ['@type' => 'Country', 'name' => 'Malaysia'],
+    'audience'       => [
+        '@type'         => 'BusinessAudience',
+        'audienceType'  => 'Furniture manufacturers, retailers, wholesalers, exporters and SME operators',
+    ],
+    'termsOfService' => $_origin . '/consulting.php#package',
+    'hasOfferCatalog' => [
+        '@type'            => 'OfferCatalog',
+        'name'             => 'Scope of services',
+        'itemListElement'  => array_map(function ($s) {
+            return [
+                '@type'       => 'Offer',
+                'itemOffered' => ['@type' => 'Service', 'name' => $s],
+            ];
+        }, $scope_items),
+    ],
+    'offers' => [
+        '@type'         => 'Offer',
+        'priceCurrency' => 'MYR',
+        'availability'  => 'https://schema.org/InStock',
+        'priceSpecification' => [
+            '@type'         => 'PriceSpecification',
+            'priceCurrency' => 'MYR',
+            'minPrice'      => 10000,
+            'maxPrice'      => 40000,
+            'unitText'      => 'MONTH',
+            'description'   => 'Monthly billable amount, milestone-based, within a 12-month engagement capped at RM 300,000.',
+        ],
+    ],
+];
+
+$howto_schema = [
+    '@context'   => 'https://schema.org',
+    '@type'      => 'HowTo',
+    'name'       => 'How AICAP Solution delivers a consulting engagement',
+    'description'=> 'A four-phase advisory process that assesses the current business, designs the target state, plans the roadmap, and guides delivery.',
+    'totalTime'  => 'P12M',
+    'step'       => [
+        ['@type' => 'HowToStep', 'position' => 1, 'name' => 'Discover',
+         'text' => 'Assess current processes, systems, data and pain points across the business.'],
+        ['@type' => 'HowToStep', 'position' => 2, 'name' => 'Design',
+         'text' => 'Translate business goals into a BRD, target workflow, data structure and architecture.'],
+        ['@type' => 'HowToStep', 'position' => 3, 'name' => 'Plan',
+         'text' => 'Sequence initiatives into a realistic implementation roadmap with milestones.'],
+        ['@type' => 'HowToStep', 'position' => 4, 'name' => 'Guide',
+         'text' => 'Fortnightly reviews with your team to unblock, adjust scope, and drive delivery.'],
+    ],
+];
+
+$breadcrumb_schema = [
+    '@context' => 'https://schema.org',
+    '@type'    => 'BreadcrumbList',
+    'itemListElement' => [
+        ['@type' => 'ListItem', 'position' => 1, 'name' => 'Home',       'item' => $_origin . '/'],
+        ['@type' => 'ListItem', 'position' => 2, 'name' => 'Consulting', 'item' => $_origin . '/consulting.php'],
+    ],
+];
+
+$page_jsonld = [$service_schema, $howto_schema, $breadcrumb_schema];
+
 require __DIR__ . '/inc/corp_header.php';
 ?>
 
@@ -217,6 +340,39 @@ require __DIR__ . '/inc/corp_header.php';
       Final scope, deliverables and fees are agreed per engagement in Appendix A —
       Services Milestones &amp; Deliverable Schedule.
     </p>
+  </div>
+</section>
+
+<!-- FAQ (visible + FAQPage JSON-LD auto-emitted by corp_header) -->
+<section class="corp" id="faq" itemscope itemtype="https://schema.org/FAQPage">
+  <div class="container">
+    <h2>Frequently asked questions</h2>
+    <p class="lead">Direct, short answers so decision-makers (and AI answer engines) can quote them cleanly.</p>
+
+    <div style="max-width:820px;margin-top:24px;">
+      <?php foreach ($page_faq as $i => [$q, $a]):
+        // First 3 open by default so the page is answer-ready above the fold.
+        $open = $i < 3 ? ' open' : '';
+      ?>
+        <details<?= $open ?>
+                 style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:16px 20px;margin-bottom:10px;"
+                 itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+          <summary style="font-weight:700;font-size:16px;cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;color:var(--bg);">
+            <span itemprop="name"><?= e($q) ?></span>
+            <span style="color:var(--accent);font-size:20px;line-height:1;">＋</span>
+          </summary>
+          <div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"
+               style="margin-top:10px;color:#374151;font-size:15px;line-height:1.6;">
+            <div itemprop="text"><?= e($a) ?></div>
+          </div>
+        </details>
+      <?php endforeach; ?>
+    </div>
+    <style>
+      /* Rotate + symbol to ×  when open */
+      details[open] > summary > span:last-child { transform: rotate(45deg); display:inline-block; }
+      summary::-webkit-details-marker { display: none; }
+    </style>
   </div>
 </section>
 

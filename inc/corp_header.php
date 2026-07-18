@@ -3,21 +3,103 @@
  * Shared corporate chrome — header.
  *
  * Expects in scope:
- *   $page_title  string  page <title>
- *   $page_id     string  one of: home | features | how | pricing | licensing | about | contact
- *   $page_desc   string  meta description
- *   $page_image  string  optional og:image (defaults to AICAP brand)
+ *   $page_title    string   <title>
+ *   $page_id       string   home | features | consulting | how | pricing | licensing | about | contact | blog
+ *   $page_desc     string   meta description (also used for og:/twitter:)
+ *   $page_image    string   optional og:image (absolute or root-relative)
+ *   $page_keywords string   optional meta keywords (comma-separated)
+ *   $page_jsonld   array    optional array of Schema.org JSON-LD objects
+ *                           (Organization is emitted automatically site-wide;
+ *                           add Service/FAQPage/HowTo/BreadcrumbList/etc here)
+ *   $page_faq      array    optional [[q,a], ...] — auto-rendered as FAQPage
+ *                           JSON-LD if $page_jsonld doesn't already include one
  */
 require_once __DIR__ . '/helpers.php';
 
-$page_title = $page_title ?? 'AICAP Furniture BOS';
-$page_id    = $page_id    ?? '';
-$page_desc  = $page_desc  ?? 'Multi-tenant SaaS for furniture brands. Each licensed company gets its own branded site, e-catalog, vouchers, leads and analytics.';
-$page_image = $page_image ?? '';
+$page_title    = $page_title    ?? 'AICAP Furniture BOS';
+$page_id       = $page_id       ?? '';
+$page_desc     = $page_desc     ?? 'Multi-tenant SaaS + professional consulting for Malaysia\'s furniture industry — branded tenant sites, e-catalog, vouchers, leads, analytics, and end-to-end digital transformation advisory.';
+$page_image    = $page_image    ?? '';
+$page_keywords = $page_keywords ?? 'furniture BOS, Malaysia furniture, furniture SaaS, digital transformation, ERP, CRM, WMS, BI dashboard, consulting, AICAP';
+$page_jsonld   = $page_jsonld   ?? [];
+$page_faq      = $page_faq      ?? [];
 
 $_scheme = ($_SERVER['HTTPS'] ?? 'off') !== 'off' ? 'https' : 'http';
 $_host   = $_SERVER['HTTP_HOST'] ?? '';
 $_url    = $_scheme . '://' . $_host . ($_SERVER['REQUEST_URI'] ?? '/');
+$_origin = $_scheme . '://' . $_host;
+
+if ($page_image && !preg_match('#^https?://#', $page_image)) {
+    $page_image = $_origin . $page_image;
+}
+
+// ---------- Site-wide Organization schema (renders on every page) ----------
+$_org_schema = [
+    '@context'    => 'https://schema.org',
+    '@type'       => 'Organization',
+    '@id'         => $_origin . '/#organization',
+    'name'        => 'AICAP Solution',
+    'legalName'   => 'AICAP Solution Sdn. Bhd.',
+    'url'         => $_origin,
+    'logo'        => $_origin . '/favicon.ico',
+    'description' => 'AICAP Solution provides SaaS-based Furniture Business Operating System (BOS) and professional consulting for Malaysia\'s furniture industry — spanning e-catalog, CRM, WMS, BI dashboards, dealer portals and marketplace integration.',
+    'foundingDate'=> '2024',
+    'identifier'  => '202401048231',
+    'address'     => [
+        '@type'           => 'PostalAddress',
+        'streetAddress'   => 'Zenith Corporate Park 1, Block B-19-02, Jalan SS7/26 Kelana Jaya',
+        'addressLocality' => 'Petaling Jaya',
+        'addressRegion'   => 'Selangor',
+        'addressCountry'  => 'MY',
+    ],
+    'areaServed'  => ['@type' => 'Country', 'name' => 'Malaysia'],
+    'knowsAbout'  => [
+        'Furniture industry digitalisation',
+        'Business Operating System (BOS)',
+        'BI Dashboard', 'CRM', 'WMS',
+        'Dealer Portal', 'Supplier Portal',
+        'Marketplace integration',
+        'AI in furniture business',
+    ],
+];
+
+// Site-wide WebSite schema with SearchAction (helps AEO recognise the site)
+$_site_schema = [
+    '@context' => 'https://schema.org',
+    '@type'    => 'WebSite',
+    '@id'      => $_origin . '/#website',
+    'url'      => $_origin,
+    'name'     => 'AICAP Furniture BOS',
+    'publisher'=> ['@id' => $_origin . '/#organization'],
+    'inLanguage' => 'en-MY',
+];
+
+// If a page passed a $page_faq array and no FAQPage is already in $page_jsonld,
+// build one automatically for AEO.
+$_has_faq_ld = false;
+foreach ($page_jsonld as $b) {
+    if (($b['@type'] ?? '') === 'FAQPage') { $_has_faq_ld = true; break; }
+}
+if ($page_faq && !$_has_faq_ld) {
+    $mainEntity = [];
+    foreach ($page_faq as $qa) {
+        if (!isset($qa[0], $qa[1])) continue;
+        $mainEntity[] = [
+            '@type' => 'Question',
+            'name'  => $qa[0],
+            'acceptedAnswer' => ['@type' => 'Answer', 'text' => $qa[1]],
+        ];
+    }
+    if ($mainEntity) {
+        $page_jsonld[] = [
+            '@context'   => 'https://schema.org',
+            '@type'      => 'FAQPage',
+            'mainEntity' => $mainEntity,
+        ];
+    }
+}
+
+$_all_jsonld = array_merge([$_org_schema, $_site_schema], $page_jsonld);
 ?><!doctype html>
 <html lang="en">
 <head>
@@ -26,16 +108,29 @@ $_url    = $_scheme . '://' . $_host . ($_SERVER['REQUEST_URI'] ?? '/');
 <meta name="theme-color" content="#0f172a">
 <title><?= e($page_title) ?></title>
 <meta name="description" content="<?= e($page_desc) ?>">
+<?php if ($page_keywords): ?><meta name="keywords" content="<?= e($page_keywords) ?>"><?php endif; ?>
+<meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1">
+<meta name="author" content="AICAP Solution Sdn. Bhd.">
+<meta name="geo.region" content="MY-10">
+<meta name="geo.placename" content="Petaling Jaya, Selangor, Malaysia">
 <link rel="canonical" href="<?= e($_url) ?>">
 <meta property="og:site_name" content="AICAP Furniture BOS">
 <meta property="og:title" content="<?= e($page_title) ?>">
 <meta property="og:description" content="<?= e($page_desc) ?>">
 <meta property="og:url" content="<?= e($_url) ?>">
 <meta property="og:type" content="website">
-<?php if ($page_image): ?><meta property="og:image" content="<?= e($page_image) ?>"><?php endif; ?>
-<meta name="twitter:card" content="summary">
+<meta property="og:locale" content="en_MY">
+<?php if ($page_image): ?>
+<meta property="og:image" content="<?= e($page_image) ?>">
+<meta property="og:image:alt" content="<?= e($page_title) ?>">
+<?php endif; ?>
+<meta name="twitter:card" content="<?= $page_image ? 'summary_large_image' : 'summary' ?>">
 <meta name="twitter:title" content="<?= e($page_title) ?>">
 <meta name="twitter:description" content="<?= e($page_desc) ?>">
+<?php if ($page_image): ?><meta name="twitter:image" content="<?= e($page_image) ?>"><?php endif; ?>
+<?php foreach ($_all_jsonld as $_ld): ?>
+<script type="application/ld+json"><?= json_encode($_ld, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?></script>
+<?php endforeach; ?>
 <style>
 :root { --bg:#0f172a; --bg2:#1e293b; --fg:#fff; --muted:#94a3b8; --soft:#cbd5e1; --accent:#f59e0b; --accent-2:#fbbf24; --ink:#111; --ink-2:#374151; --line:#e5e7eb; --bg-soft:#f9fafb; }
 * { box-sizing: border-box; }
