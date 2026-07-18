@@ -192,6 +192,7 @@ section.corp.dark .lead { color: var(--soft); }
     <nav class="corp-nav" id="corp-nav">
       <a href="/"               <?= $page_id === 'home'      ? 'class="active"' : '' ?>>Home</a>
       <a href="/features.php"   <?= $page_id === 'features'  ? 'class="active"' : '' ?>>Features</a>
+      <a href="/consulting.php" <?= $page_id === 'consulting'? 'class="active"' : '' ?>>Consulting</a>
       <a href="/how-it-works.php" <?= $page_id === 'how'      ? 'class="active"' : '' ?>>How it works</a>
       <a href="/pricing.php"    <?= $page_id === 'pricing'   ? 'class="active"' : '' ?>>Pricing</a>
       <a href="/licensing.php"  <?= $page_id === 'licensing' ? 'class="active"' : '' ?>>Licensing</a>

@@ -10,10 +10,11 @@ $err = '';
 $submitted = false;
 
 $type_options = [
-    'subscribe' => 'Subscribe (single brand)',
-    'licensing' => 'Licensing (multi-brand)',
-    'partner'   => 'Partnership (agency / consultant)',
-    'general'   => 'General enquiry',
+    'subscribe'  => 'Subscribe (single brand)',
+    'licensing'  => 'Licensing (multi-brand)',
+    'partner'    => 'Partnership (agency / consultant)',
+    'consulting' => 'Consulting (advisory & implementation)',
+    'general'    => 'General enquiry',
 ];
 $default_type = (string) input('type', 'subscribe');
 if (!isset($type_options[$default_type])) $default_type = 'subscribe';

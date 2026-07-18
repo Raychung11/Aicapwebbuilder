@@ -22,6 +22,7 @@
         <h4>Product</h4>
         <div class="links">
           <a href="/features.php">Features</a>
+          <a href="/consulting.php">Consulting Services</a>
           <a href="/how-it-works.php">How it works</a>
           <a href="/pricing.php">Pricing</a>
           <a href="/licensing.php">Licensing</a>

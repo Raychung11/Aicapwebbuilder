@@ -72,6 +72,91 @@ require __DIR__ . '/corp_header.php';
   </div>
 </section>
 
+<!-- PROFESSIONAL CONSULTING SERVICES -->
+<section class="corp alt">
+  <div class="container">
+    <span class="tag" style="display:inline-block;padding:4px 10px;border-radius:999px;background:rgba(15,23,42,.08);color:var(--bg);font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:12px;">
+      Professional Services
+    </span>
+    <h2>Consulting &amp; advisory for digital transformation</h2>
+    <p class="lead">
+      Beyond software — AICAP Solution provides end-to-end consulting, advisory,
+      planning and implementation support for business system development, process
+      optimisation, and operational improvement.
+    </p>
+
+    <div style="display:grid;gap:22px;grid-template-columns: 1fr;margin-top:30px;">
+      <style>
+        @media (min-width: 900px) {
+          .cons-grid { grid-template-columns: 1.1fr 1fr !important; }
+        }
+        .cons-col {
+          background:#fff; border:1px solid #e5e7eb; border-radius:14px;
+          padding:22px 24px;
+        }
+        .cons-col h3 { margin: 0 0 12px; font-size:17px; color: var(--bg); display:flex; align-items:center; gap:8px; }
+        .cons-col ul { list-style: none; padding: 0; margin: 0; }
+        .cons-col li {
+          padding: 8px 0 8px 26px; position: relative; font-size: 15px;
+          border-bottom: 1px solid #f3f4f6; color:#1f2937;
+        }
+        .cons-col li:last-child { border-bottom: 0; }
+        .cons-col li::before {
+          content: ""; position: absolute; left: 0; top: 14px;
+          width: 16px; height: 16px; border-radius: 4px;
+          background: rgba(245, 158, 11, .15);
+          box-shadow: inset 0 0 0 1px var(--accent);
+        }
+        .cons-col li::after {
+          content: "✓"; position: absolute; left: 3px; top: 10px;
+          font-size: 11px; font-weight: 800; color: var(--accent);
+        }
+      </style>
+      <div class="cons-grid" style="display:grid;gap:18px;grid-template-columns:1fr;">
+        <div class="cons-col">
+          <h3>🎯 Scope of services</h3>
+          <ul>
+            <li>Business process assessment</li>
+            <li>Functional &amp; technical requirements analysis</li>
+            <li>Workflow optimisation consultation</li>
+            <li>System architecture advisory</li>
+            <li>User experience review</li>
+            <li>Data structure planning</li>
+            <li>Integration framework consultation</li>
+            <li>Project planning &amp; implementation guidance</li>
+            <li>Fortnightly project review sessions</li>
+          </ul>
+        </div>
+        <div class="cons-col">
+          <h3>📦 Deliverables</h3>
+          <ul>
+            <li>Business Requirements Document (BRD)</li>
+            <li>Process Flow Documentation</li>
+            <li>System Architecture Recommendations</li>
+            <li>Integration Strategy Report</li>
+            <li>Implementation Roadmap</li>
+          </ul>
+          <div style="margin-top:18px;padding:14px 16px;background:#fef3c7;border-radius:10px;border:1px solid #fde68a;">
+            <div style="font-size:12px;font-weight:700;color:#92400e;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px;">
+              Engagement
+            </div>
+            <div style="color:#78350f;font-size:14px;line-height:1.5;">
+              12-month renewable term ·
+              milestone-based monthly invoicing ·
+              fortnightly review cadence.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="btn-row" style="margin-top:24px;">
+      <a class="btn dark" href="/consulting.php">Learn about consulting →</a>
+      <a class="btn outline" href="/contact.php?type=consulting">Request a scoping call</a>
+    </div>
+  </div>
+</section>
+
 <!-- LIVE TENANTS -->
 <?php if ($companies): ?>
 <section class="corp alt">
