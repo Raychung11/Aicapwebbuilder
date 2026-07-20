@@ -1,4 +1,12 @@
 <?php
+// Diagnostic switch: append ?diag=1 to any URL to surface PHP errors instead
+// of the blank Hostinger 500 page. Safe to leave in — off by default.
+if (isset($_GET['diag']) && $_GET['diag'] === '1') {
+    error_reporting(E_ALL);
+    ini_set('display_errors', '1');
+    ini_set('display_startup_errors', '1');
+}
+
 require_once __DIR__ . '/inc/tenant.php';
 require_once __DIR__ . '/inc/auth.php';
 require_once __DIR__ . '/inc/csrf.php';
