@@ -1,0 +1,7 @@
+# Allow direct access to uploaded images, but disable PHP execution.
+<FilesMatch "\.(php|php5|phtml|phar)$">
+  Require all denied
+  Deny from all
+</FilesMatch>
+Options -ExecCGI
+AddHandler cgi-script .php .php5 .phtml .phar
