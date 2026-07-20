@@ -659,6 +659,43 @@ CREATE TABLE IF NOT EXISTS ai_generation_logs (
   KEY idx_ai_log_created (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- ---------------------------------------------------------------------
+-- Shoppable Lookbook — tenant-scoped scenes + hotspots on each scene
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS lookbook_scenes (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  company_id INT UNSIGNED NOT NULL,
+  title VARCHAR(190) NOT NULL,
+  slug VARCHAR(220) NOT NULL,
+  description TEXT,
+  image_path VARCHAR(500) DEFAULT NULL,
+  cover_alt VARCHAR(255) DEFAULT NULL,
+  status ENUM('active','draft','disabled') NOT NULL DEFAULT 'active',
+  sort_order INT NOT NULL DEFAULT 0,
+  view_count INT UNSIGNED NOT NULL DEFAULT 0,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uniq_look_slug (company_id, slug),
+  KEY idx_look_company (company_id, status, sort_order)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS lookbook_hotspots (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  company_id INT UNSIGNED NOT NULL,
+  scene_id INT UNSIGNED NOT NULL,
+  product_id INT UNSIGNED NOT NULL,
+  x_pct DECIMAL(5,2) NOT NULL,
+  y_pct DECIMAL(5,2) NOT NULL,
+  label VARCHAR(120) DEFAULT NULL,
+  sort_order INT NOT NULL DEFAULT 0,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_hot_scene (scene_id),
+  KEY idx_hot_product (product_id),
+  KEY idx_hot_company (company_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- Run install.php once after importing this schema to seed the

@@ -23,6 +23,9 @@ RewriteRule ^packages/([a-z0-9_-]+)/?$ /package.php?slug=$1 [L,QSA]
 # Corporate blog friendly URL: /blog/{slug} -> /blog-post.php?slug=...
 # (/blog and /blog.php still resolve to the listing directly.)
 RewriteRule ^blog/([a-z0-9_-]+)/?$ /blog-post.php?slug=$1 [L,QSA]
+
+# Tenant lookbook friendly URL: /lookbook/{slug} -> /lookbook-view.php?slug=...
+RewriteRule ^lookbook/([a-z0-9_-]+)/?$ /lookbook-view.php?slug=$1 [L,QSA]
 </IfModule>
 
 # Disable directory listing

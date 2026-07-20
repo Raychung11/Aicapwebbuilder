@@ -18,6 +18,7 @@ $CA_MENU = [
     ['file' => 'settings.php',     'label' => 'Branding & SEO',  'icon' => '🎨'],
     ['file' => 'banners.php',      'label' => 'Banners',         'icon' => '🖼️'],
     ['file' => 'branches.php',     'label' => 'Branches',        'icon' => '📍'],
+    ['file' => 'lookbook.php',     'label' => 'Lookbook',        'icon' => '🖼️'],
     ['file' => 'salespersons.php', 'label' => 'Salespersons',    'icon' => '👥'],
     ['file' => 'referrals.php',    'label' => 'Referrals',       'icon' => '🔗'],
     ['file' => 'products.php',     'label' => 'Products',        'icon' => '🛋️'],

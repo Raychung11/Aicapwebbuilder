@@ -35,6 +35,10 @@ $pretty = [
     '#^packages/([a-z0-9_-]+)/?$#i' => function ($m) {
         $_GET['slug'] = $m[1]; return 'package.php';
     },
+    // /lookbook/<slug>     → /lookbook-view.php
+    '#^lookbook/([a-z0-9_-]+)/?$#i' => function ($m) {
+        $_GET['slug'] = $m[1]; return 'lookbook-view.php';
+    },
 ];
 foreach ($pretty as $pattern => $resolver) {
     if (preg_match($pattern, $rel, $matches)) {

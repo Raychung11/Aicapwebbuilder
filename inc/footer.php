@@ -37,6 +37,7 @@ $wa = $company['whatsapp_number'] ?? '';
           <a href="/packages.php">Packages</a>
           <a href="/voucher.php">Vouchers</a>
           <a href="/promo.php">Promo</a>
+          <a href="/lookbook.php">Lookbook</a>
           <a href="/visit.php">Visit Us</a>
           <a href="/#about">About</a>
         </div>
