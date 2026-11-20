@@ -1,0 +1,15 @@
+# Local config overrides
+inc/config.local.php
+
+# Uploaded files (keep folder, not contents)
+/uploads/company/
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# PHP
+*.log
