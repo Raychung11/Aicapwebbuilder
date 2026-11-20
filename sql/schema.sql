@@ -696,6 +696,24 @@ CREATE TABLE IF NOT EXISTS lookbook_hotspots (
   KEY idx_hot_company (company_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- ---------------------------------------------------------------------
+-- company_domains — N custom domains per tenant (multi-domain support).
+-- Each row is a hostname that resolves to the tenant. `is_primary`
+-- marks the canonical one (used for links and canonical tags). The
+-- legacy `companies.custom_domain` column is still honoured as a
+-- fallback when no rows exist here.
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS company_domains (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  company_id INT UNSIGNED NOT NULL,
+  domain VARCHAR(190) NOT NULL,
+  is_primary TINYINT(1) NOT NULL DEFAULT 0,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uniq_company_domain (domain),
+  KEY idx_company_domain_company (company_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- Run install.php once after importing this schema to seed the

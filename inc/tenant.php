@@ -88,10 +88,26 @@ function _resolve_company(): ?array {
                 if ($row) return $row;
             }
         } else {
-            $row = db_one(
-                'SELECT * FROM companies WHERE custom_domain = ? AND status = "active" LIMIT 1',
-                [$host]
-            );
+            // Prefer the multi-domain table (company_domains) when present;
+            // fall back to the legacy single `custom_domain` column so older
+            // tenants keep working.
+            $row = null;
+            try {
+                $row = db_one(
+                    'SELECT c.* FROM company_domains d
+                       JOIN companies c ON c.id = d.company_id
+                      WHERE d.domain = ? AND c.status = "active" LIMIT 1',
+                    [$host]
+                );
+            } catch (Throwable $e) {
+                // company_domains not yet migrated — ignore and fall through.
+            }
+            if (!$row) {
+                $row = db_one(
+                    'SELECT * FROM companies WHERE custom_domain = ? AND status = "active" LIMIT 1',
+                    [$host]
+                );
+            }
             if ($row) return $row;
         }
     }
@@ -131,10 +147,36 @@ function require_company(): array {
 }
 
 function company_url(array $company, string $path = '/'): string {
-    if (!empty($company['custom_domain'])) {
-        return APP_URL_SCHEME . '://' . $company['custom_domain'] . $path;
+    $primary = company_primary_domain($company);
+    if ($primary) {
+        return APP_URL_SCHEME . '://' . $primary . $path;
     }
     return APP_URL_SCHEME . '://' . $company['subdomain'] . '.' . APP_BASE_DOMAIN . $path;
+}
+
+/**
+ * Return the tenant's canonical hostname for public URLs:
+ *  1. company_domains row flagged is_primary = 1 (new multi-domain table)
+ *  2. legacy companies.custom_domain column
+ *  3. null (caller falls back to <subdomain>.aicap.my)
+ */
+function company_primary_domain(array $company): ?string {
+    try {
+        $row = db_one(
+            'SELECT domain FROM company_domains
+              WHERE company_id = ?
+              ORDER BY is_primary DESC, id ASC
+              LIMIT 1',
+            [(int) $company['id']]
+        );
+        if ($row && !empty($row['domain'])) return $row['domain'];
+    } catch (Throwable $e) {
+        // table missing — ignore and fall through
+    }
+    if (!empty($company['custom_domain'])) {
+        return $company['custom_domain'];
+    }
+    return null;
 }
 
 function is_preview_mode(): bool {
